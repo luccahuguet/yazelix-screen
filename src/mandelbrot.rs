@@ -10,7 +10,7 @@ const ANSI_SUN_YELLOW: &str = "\u{1b}[38;5;226m";
 const ANSI_RESET: &str = "\u{1b}[0m";
 
 const MANDELBROT_LOOP_FRAMES: usize = 120;
-const MANDELBROT_RETURN_START_PROGRESS: f64 = 0.86;
+const MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS: f64 = 0.68;
 const MANDELBROT_TARGET_CENTER: Complex64 = Complex64 {
     re: -0.743_643_887_037_151,
     im: 0.131_825_904_205_33,
@@ -190,7 +190,7 @@ fn render_mandelbrot_frame(context: ScreenAnimationContext, frame_index: usize) 
     let height = context.resolved_height.max(1);
     let view = mandelbrot_view(frame_index);
     let max_iterations = mandelbrot_max_iterations_for_zoom(width, height, view.zoom);
-    let cells = render_mandelbrot_cells(width, height, view, max_iterations);
+    let cells = render_mandelbrot_cells(width, height, frame_index, view, max_iterations);
 
     let mut frame = ScreenFrame::new(width, height);
     for y in 0..height {
@@ -207,16 +207,39 @@ fn render_mandelbrot_frame(context: ScreenAnimationContext, frame_index: usize) 
 fn render_mandelbrot_cells(
     width: usize,
     height: usize,
+    frame_index: usize,
     view: MandelbrotView,
     max_iterations: usize,
 ) -> Vec<Option<ScreenCell>> {
     let mut cells = vec![None; width.saturating_mul(height)];
+    let portal_progress =
+        mandelbrot_recursive_portal_progress(mandelbrot_loop_progress(frame_index));
+    let nested_view = mandelbrot_view_for_progress(0.0);
+    let nested_max_iterations = mandelbrot_max_iterations_for_zoom(width, height, nested_view.zoom);
 
     for y in 0..height {
         for x in 0..width {
-            let (cx, cy) = mandelbrot_point(x, y, width, height, view);
-            let escape = mandelbrot_escape(cx, cy, max_iterations);
-            if let Some(sample) = mandelbrot_sample(escape, max_iterations, view, width) {
+            let nx = normalized_axis_position(x, width);
+            let ny = normalized_axis_position(y, height);
+
+            if let Some((portal_x, portal_y)) =
+                portal_progress.and_then(|progress| mandelbrot_portal_coordinates(nx, ny, progress))
+            {
+                if let Some(sample) = mandelbrot_sample_at(
+                    portal_x,
+                    portal_y,
+                    width,
+                    height,
+                    nested_view,
+                    nested_max_iterations,
+                ) {
+                    cells[y * width + x] = mandelbrot_cell(sample, nested_view);
+                }
+                continue;
+            }
+
+            if let Some(sample) = mandelbrot_sample_at(nx, ny, width, height, view, max_iterations)
+            {
                 cells[y * width + x] = mandelbrot_cell(sample, view);
             }
         }
@@ -236,6 +259,10 @@ struct MandelbrotView {
 
 fn mandelbrot_view(frame_index: usize) -> MandelbrotView {
     let progress = mandelbrot_loop_progress(frame_index);
+    mandelbrot_view_for_progress(progress)
+}
+
+fn mandelbrot_view_for_progress(progress: f64) -> MandelbrotView {
     let dive_progress = mandelbrot_dive_progress(progress);
     let scale_x = mandelbrot_scale_x(dive_progress);
     let scale_ratio = scale_x / MANDELBROT_START_SCALE_X;
@@ -257,14 +284,14 @@ fn smoothstep(progress: f64) -> f64 {
     t * t * (3.0 - 2.0 * t)
 }
 
-fn mandelbrot_dive_progress(progress: f64) -> f64 {
+fn smoothstep_with_tail(progress: f64, tail_weight: f64) -> f64 {
     let t = progress.clamp(0.0, 1.0);
-    if t < MANDELBROT_RETURN_START_PROGRESS {
-        return smoothstep(t / MANDELBROT_RETURN_START_PROGRESS).powf(1.15);
-    }
-    1.0 - smoothstep(
-        (t - MANDELBROT_RETURN_START_PROGRESS) / (1.0 - MANDELBROT_RETURN_START_PROGRESS),
-    )
+    let tail = tail_weight.clamp(0.0, 1.0);
+    smoothstep(t) * (1.0 - tail) + t * tail
+}
+
+fn mandelbrot_dive_progress(progress: f64) -> f64 {
+    smoothstep_with_tail(progress, 0.20).powf(1.10)
 }
 
 fn mandelbrot_scale_x(dive_progress: f64) -> f64 {
@@ -277,34 +304,63 @@ fn mandelbrot_loop_progress(frame_index: usize) -> f64 {
     if MANDELBROT_LOOP_FRAMES <= 1 {
         0.0
     } else {
-        (frame_index % MANDELBROT_LOOP_FRAMES) as f64 / MANDELBROT_LOOP_FRAMES as f64
+        (frame_index % MANDELBROT_LOOP_FRAMES) as f64 / (MANDELBROT_LOOP_FRAMES - 1) as f64
     }
 }
 
-fn mandelbrot_point(
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
-    view: MandelbrotView,
-) -> (f64, f64) {
-    let nx = if width <= 1 {
+fn normalized_axis_position(position: usize, length: usize) -> f64 {
+    if length <= 1 {
         0.5
     } else {
-        x as f64 / (width - 1) as f64
-    };
-    let ny = if height <= 1 {
-        0.5
-    } else {
-        y as f64 / (height - 1) as f64
-    };
+        position as f64 / (length - 1) as f64
+    }
+}
 
+fn mandelbrot_point(nx: f64, ny: f64, view: MandelbrotView) -> (f64, f64) {
     let base = Complex64 {
         re: (nx - 0.5) * view.base_scale_x,
         im: (ny - 0.5) * view.base_scale_x * 0.64,
     };
     let point = view.center + view.multiplier * base;
     (point.re, point.im)
+}
+
+fn mandelbrot_sample_at(
+    nx: f64,
+    ny: f64,
+    width: usize,
+    _height: usize,
+    view: MandelbrotView,
+    max_iterations: usize,
+) -> Option<MandelbrotSample> {
+    let (cx, cy) = mandelbrot_point(nx, ny, view);
+    let escape = mandelbrot_escape(cx, cy, max_iterations);
+    mandelbrot_sample(escape, max_iterations, view, width)
+}
+
+fn mandelbrot_recursive_portal_progress(progress: f64) -> Option<f64> {
+    if progress < MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS {
+        return None;
+    }
+
+    Some(smoothstep_with_tail(
+        (progress - MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS)
+            / (1.0 - MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS),
+        0.34,
+    ))
+}
+
+fn mandelbrot_portal_coordinates(nx: f64, ny: f64, progress: f64) -> Option<(f64, f64)> {
+    let scale = 0.12 + progress * 0.88;
+    let local_x = (nx - 0.5) / scale;
+    let local_y = (ny - 0.5) / scale;
+    let distance = (local_x * local_x + (local_y * 1.20) * (local_y * 1.20)).sqrt();
+    let hole_radius = 0.08 + progress * 0.74;
+    if distance > hole_radius {
+        return None;
+    }
+
+    Some((0.5 + local_x, 0.5 + local_y))
 }
 
 fn mandelbrot_sample(
@@ -546,58 +602,78 @@ mod tests {
         }
     }
 
-    // Defends: the finite animation cycle repeats at the real cycle boundary, not by resetting the penultimate frame.
+    // Defends: the bounded recursion phase repeats so long-running sessions do not drain into empty precision limits.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn mandelbrot_loop_boundary_repeats_first_frame_exactly() {
+    fn mandelbrot_cycle_boundary_repeats_first_frame_exactly() {
         assert_eq!(
             render_test_frame(context(48, 16), 0),
             render_test_frame(context(48, 16), MANDELBROT_LOOP_FRAMES)
         );
     }
 
-    // Regression: the last visible frame before wrap must already resemble the first frame.
+    // Regression: the frame before wrap must already reveal the next cycle's overview.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn mandelbrot_loop_seam_is_structurally_continuous() {
-        let first = strip_ansi_from_frame(render_test_frame(context(64, 20), 0));
-        let penultimate = strip_ansi_from_frame(render_test_frame(
-            context(64, 20),
-            MANDELBROT_LOOP_FRAMES - 1,
-        ));
-
-        assert_ne!(first, penultimate);
-        let similarity = visible_frame_similarity(&first, &penultimate);
-        assert!(
-            similarity >= 0.65,
-            "penultimate frame similarity was {similarity}"
+    fn mandelbrot_recursive_portal_hides_cycle_reset() {
+        assert_eq!(
+            render_test_frame(context(48, 16), 0),
+            render_test_frame(context(48, 16), MANDELBROT_LOOP_FRAMES - 1)
         );
     }
 
-    // Defends: Mandelbrot starts from a recognizable overview, dives deeply, then returns for a clean loop.
+    // Regression: the recursive portal should carve a growing hole instead of overlapping the parent layer.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn mandelbrot_view_dives_from_overview_to_boundary_and_returns() {
+    fn mandelbrot_recursive_portal_carves_parent_layer_and_keeps_moving() {
+        let start =
+            mandelbrot_recursive_portal_progress(MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS)
+                .expect("portal starts");
+        let before_end = mandelbrot_recursive_portal_progress(0.95).expect("portal active");
+        let near_end = mandelbrot_recursive_portal_progress(0.99).expect("portal active");
+        let end = mandelbrot_recursive_portal_progress(1.0).expect("portal active");
+
+        assert!(mandelbrot_portal_coordinates(0.5, 0.5, start).is_some());
+        assert!(mandelbrot_portal_coordinates(0.0, 0.0, start).is_none());
+        assert!(
+            near_end - before_end > 0.04,
+            "portal slowed too much near the cycle boundary"
+        );
+        assert_eq!(
+            mandelbrot_portal_coordinates(0.0, 0.0, end),
+            Some((0.0, 0.0))
+        );
+        assert_eq!(
+            mandelbrot_portal_coordinates(1.0, 1.0, end),
+            Some((1.0, 1.0))
+        );
+    }
+
+    // Defends: Mandelbrot starts from a recognizable overview, dives deeply, then recurses into the next overview.
+    // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
+    #[test]
+    fn mandelbrot_view_dives_from_overview_to_recursive_boundary() {
         let home = mandelbrot_view(0);
         let quarter = mandelbrot_view(MANDELBROT_LOOP_FRAMES / 4);
         let half = mandelbrot_view(MANDELBROT_LOOP_FRAMES / 2);
         let deep = mandelbrot_view(MANDELBROT_LOOP_FRAMES * 4 / 5);
         let seam = mandelbrot_view(MANDELBROT_LOOP_FRAMES - 1);
-        let loop_home = mandelbrot_view(MANDELBROT_LOOP_FRAMES);
+        let next_cycle = mandelbrot_view(MANDELBROT_LOOP_FRAMES);
 
         assert_eq!(home.center, MANDELBROT_TARGET_CENTER);
         assert!(quarter.zoom > home.zoom);
         assert!(half.zoom > quarter.zoom);
         assert!(deep.zoom > half.zoom);
-        assert!(deep.zoom > home.zoom * 100_000.0);
-        assert!(deep.scale_x < home.scale_x / 100_000.0);
+        assert!(deep.zoom > home.zoom * 10_000.0);
+        assert!(deep.scale_x < home.scale_x / 10_000.0);
         assert_eq!(deep.center, MANDELBROT_TARGET_CENTER);
-        assert!(seam.zoom < home.zoom * 1.25);
+        assert!(seam.zoom > deep.zoom);
+        assert!(seam.zoom > home.zoom * 100_000.0);
+        assert_eq!(next_cycle, home);
         assert_eq!(seam.center, MANDELBROT_TARGET_CENTER);
         assert!((home.scale_x - MANDELBROT_START_SCALE_X).abs() < f64::EPSILON);
         assert!((home.multiplier.re - 1.0).abs() < f64::EPSILON);
         assert!(home.multiplier.im.abs() < f64::EPSILON);
-        assert_eq!(home, loop_home);
     }
 
     // Regression: Mandelbrot should zoom through the Seahorse target instead of panning around it.
@@ -619,18 +695,38 @@ mod tests {
         assert!(deep.multiplier.im.abs() < f64::EPSILON);
     }
 
-    // Regression: the dive should keep changing near maximum zoom instead of freezing before return.
+    // Regression: the dive should keep changing near maximum zoom instead of freezing before the portal takes over.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn mandelbrot_dive_has_no_hold_plateau_before_return() {
+    fn mandelbrot_dive_has_no_hold_plateau_before_recursion() {
         let late_dive = mandelbrot_view((MANDELBROT_LOOP_FRAMES as f64 * 0.76).round() as usize);
         let later_dive = mandelbrot_view((MANDELBROT_LOOP_FRAMES as f64 * 0.80).round() as usize);
         let final_dive = mandelbrot_view((MANDELBROT_LOOP_FRAMES as f64 * 0.84).round() as usize);
-        let returning = mandelbrot_view((MANDELBROT_LOOP_FRAMES as f64 * 0.90).round() as usize);
+        let still_diving = mandelbrot_view((MANDELBROT_LOOP_FRAMES as f64 * 0.90).round() as usize);
 
         assert!(later_dive.zoom > late_dive.zoom);
         assert!(final_dive.zoom > later_dive.zoom);
-        assert!(returning.zoom < final_dive.zoom);
+        assert!(still_diving.zoom > final_dive.zoom);
+    }
+
+    // Regression: the endless standalone animation should remain populated after multiple phase repeats.
+    // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
+    #[test]
+    fn mandelbrot_later_cycles_stay_populated() {
+        for frame_index in [
+            MANDELBROT_LOOP_FRAMES * 2 + MANDELBROT_LOOP_FRAMES / 4,
+            MANDELBROT_LOOP_FRAMES * 2 + MANDELBROT_LOOP_FRAMES / 2,
+            MANDELBROT_LOOP_FRAMES * 2 + MANDELBROT_LOOP_FRAMES * 3 / 4,
+        ] {
+            let visible = strip_ansi_from_frame(render_test_frame(context(64, 20), frame_index));
+            let structural_fraction =
+                visible_glyph_fraction(&visible, |cell| matches!(cell, '░' | '▒' | '▓' | '█'));
+
+            assert!(
+                structural_fraction >= 0.04,
+                "frame {frame_index} is too sparse: structural fraction {structural_fraction}"
+            );
+        }
     }
 
     // Regression: nearby frames should evolve smoothly rather than shimmer from unstable per-frame remapping.
