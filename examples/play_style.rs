@@ -3,7 +3,8 @@ use std::{io, thread, time::Duration};
 use yazelix_screen::{
     BoidsAnimation, BoidsVariant, GameOfLifeAnimation, GameOfLifeCellStyle, MandelbrotAnimation,
     ScreenAnimationContext, ScreenFrameProducer, enter_screen_mode, game_of_life_spec,
-    is_game_of_life_style, leave_screen_mode, render_screen_frame, terminal_height, terminal_width,
+    is_game_of_life_style, leave_screen_mode, mandelbrot_frame_delay, render_screen_frame,
+    terminal_height, terminal_width,
 };
 
 const GAME_OF_LIFE_STYLES: &[&str] = &[
@@ -131,7 +132,7 @@ fn size_class(width: usize) -> &'static str {
 fn frame_delay(style: ExampleStyle) -> Duration {
     match style {
         ExampleStyle::Boids(_) => Duration::from_millis(70),
-        ExampleStyle::Mandelbrot => Duration::from_millis(110),
+        ExampleStyle::Mandelbrot => mandelbrot_frame_delay(),
         ExampleStyle::GameOfLife(_) => Duration::from_millis(160),
     }
 }

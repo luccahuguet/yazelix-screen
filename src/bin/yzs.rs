@@ -3,8 +3,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yazelix_screen::{
     BoidsAnimation, BoidsVariant, GameOfLifeAnimation, GameOfLifeCellStyle, MandelbrotAnimation,
     RawModeGuard, ScreenAnimationContext, ScreenFrameProducer, enter_screen_mode,
-    game_of_life_spec, is_game_of_life_style, leave_screen_mode, render_screen_frame,
-    terminal_height, terminal_width,
+    game_of_life_spec, is_game_of_life_style, leave_screen_mode, mandelbrot_frame_delay,
+    render_screen_frame, terminal_height, terminal_width,
 };
 
 const GAME_OF_LIFE_STYLES: &[&str] = &[
@@ -266,7 +266,7 @@ fn fit_inner_width(resolved_width: usize, minimum_width: usize) -> usize {
 fn frame_delay(style: StandaloneStyle) -> Duration {
     match style {
         StandaloneStyle::Boids(_) => Duration::from_millis(70),
-        StandaloneStyle::Mandelbrot => Duration::from_millis(110),
+        StandaloneStyle::Mandelbrot => mandelbrot_frame_delay(),
         StandaloneStyle::GameOfLife(_) => Duration::from_millis(160),
     }
 }

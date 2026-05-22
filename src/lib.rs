@@ -18,7 +18,8 @@ pub use game_of_life::{
     step_game_of_life_screen_state,
 };
 pub use mandelbrot::{
-    MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_max_iterations,
+    MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_frame_delay,
+    mandelbrot_max_iterations,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
