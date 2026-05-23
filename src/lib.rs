@@ -2,7 +2,9 @@
 
 mod boids;
 mod game_of_life;
+mod kitty_frames;
 mod mandelbrot;
+mod random;
 
 use crossterm::terminal;
 use std::io::{self, Write};
@@ -17,9 +19,18 @@ pub use game_of_life::{
     resolve_game_of_life_screen_body_height, step_game_of_life_cells,
     step_game_of_life_screen_state,
 };
+pub use kitty_frames::{
+    KittyFrameLayout, KittyFrameSequence, cleanup_kitty_image, draw_kitty_png_frame,
+    kitty_delete_image_command, kitty_frame_layout, kitty_png_file_command,
+    play_kitty_png_frame_sequence,
+};
 pub use mandelbrot::{
     MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_frame_delay,
     mandelbrot_max_iterations,
+};
+pub use random::{
+    BOIDS_RANDOM_STYLES, GAME_OF_LIFE_RANDOM_STYLES, KITTY_FRAME_SEQUENCE_STYLE, MANDELBROT_STYLE,
+    random_animation_slot_count, random_animation_styles, resolve_random_animation_style,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
