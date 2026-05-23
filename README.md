@@ -8,7 +8,7 @@ The user-facing command is `yzs`
 nix run github:luccahuguet/yazelix-screen#yzs
 nix run github:luccahuguet/yazelix-screen#yzs -- mandelbrot
 nix run github:luccahuguet/yazelix-screen#yzs -- game_of_life_bloom --cell-style dotted
-nix run github:luccahuguet/yazelix-screen#yzs -- magician --kitty-frame-dir /path/to/frames --kitty-frame-count 198
+nix run github:luccahuguet/yazelix-screen#yzs -- magician
 ```
 
 ## What It Contains
@@ -29,7 +29,7 @@ yzs --help
 yzs
 yzs mandelbrot
 yzs game_of_life_bloom --cell-style dotted
-yzs magician --kitty-frame-dir /path/to/frames --kitty-frame-count 198
+yzs magician
 ```
 
 Yazelix users get the integrated screen surface through the main command:
@@ -47,7 +47,7 @@ From this repository:
 cargo run --bin yzs -- --help
 cargo run --bin yzs -- mandelbrot
 cargo run --bin yzs -- game_of_life_bloom --cell-style dotted
-cargo run --bin yzs -- magician --kitty-frame-dir /path/to/frames --kitty-frame-count 198
+cargo run --bin yzs -- magician --kitty-frame-dir /path/to/frames
 ```
 
 With Nix:
@@ -72,9 +72,9 @@ Supported styles:
 
 No style means `random`
 
-`magician` requires a directory of PNG frame assets. With `--kitty-frame-count N`, `yzs` expects `frame_0.png` through `frame_N-1.png`; without a count, it uses every PNG in the directory
+The packaged `magician` style uses bundled PNG frames generated from the source GIF during the Nix build. Source-tree runs can pass `--kitty-frame-dir`; with `--kitty-frame-count N`, `yzs` accepts `frame_000.png` through `frame_N-1.png` or unpadded `frame_0.png` names
 
-`random` uses the same four-family pool as Yazelix and can resolve to `magician`, so pass the Kitty frame arguments when standalone random playback should support that branch
+`random` uses the same four-family pool as Yazelix and can resolve to `magician`
 
 ## Library Examples
 

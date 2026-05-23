@@ -4,17 +4,16 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use yazelix_screen::{
     BoidsAnimation, BoidsVariant, GAME_OF_LIFE_RANDOM_STYLES, GameOfLifeAnimation,
-    GameOfLifeCellStyle, KITTY_FRAME_SEQUENCE_STYLE, KittyFrameSequence, MANDELBROT_STYLE,
+    GameOfLifeCellStyle, KITTY_FRAME_SEQUENCE_STYLE, KittyFrameSequence,
+    MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS, MAGICIAN_FRAME_DELAY, MANDELBROT_STYLE,
     MandelbrotAnimation, RawModeGuard, ScreenAnimationContext, ScreenFrameProducer,
-    enter_screen_mode, game_of_life_spec, is_game_of_life_style, leave_screen_mode,
-    mandelbrot_frame_delay, play_kitty_png_frame_sequence, render_screen_frame,
-    resolve_random_animation_style, terminal_height, terminal_width,
+    default_magician_frame_dir, enter_screen_mode, game_of_life_spec, is_game_of_life_style,
+    leave_screen_mode, magician_frame_paths, mandelbrot_frame_delay, play_kitty_png_frame_sequence,
+    render_screen_frame, require_magician_frame_assets, resolve_random_animation_style,
+    terminal_height, terminal_width,
 };
 
-const KITTY_FRAME_DELAY: Duration = Duration::from_millis(90);
 const KITTY_IMAGE_ID: u32 = 7_930_000;
-const KITTY_EDGE_INSET_COLUMNS: usize = 4;
-const KITTY_EDGE_INSET_ROWS: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum StandaloneStyle {
@@ -149,7 +148,7 @@ fn print_help() {
     println!();
     println!("Notes:");
     println!("  Runs outside Zellij and outside a Yazelix session");
-    println!("  magician requires a directory of frame_0.png, frame_1.png, ... assets");
+    println!("  packaged magician uses bundled frames; source runs can pass --kitty-frame-dir");
     println!("  Press any key to exit");
 }
 
@@ -226,27 +225,35 @@ fn resolve_style(raw: &str, random_index: Option<usize>) -> Result<StandaloneSty
 }
 
 fn build_kitty_frame_sequence(args: &Args) -> Result<KittyFrameSequence, String> {
-    let Some(frame_dir) = args.kitty_frame_dir.as_ref() else {
-        return Err(
-            "Style `magician` requires --kitty-frame-dir with PNG frames. Try `yzs magician --kitty-frame-dir /path/to/frames --kitty-frame-count 198`"
-                .to_string(),
-        );
+    let explicit_frame_dir = args.kitty_frame_dir.clone();
+    let frame_dir = explicit_frame_dir
+        .clone()
+        .or_else(default_magician_frame_dir)
+        .ok_or_else(|| {
+            "Style `magician` requires bundled PNG frames or --kitty-frame-dir. Try the packaged `yzs magician`, or pass `--kitty-frame-dir /path/to/frames` from source"
+                .to_string()
+        })?;
+    let frame_paths = if explicit_frame_dir.is_none() && args.kitty_frame_count.is_none() {
+        require_magician_frame_assets(&frame_dir).map_err(|error| error.to_string())?;
+        magician_frame_paths(&frame_dir)
+    } else {
+        kitty_frame_paths(&frame_dir, args.kitty_frame_count)?
     };
 
     Ok(KittyFrameSequence {
-        frame_paths: kitty_frame_paths(frame_dir, args.kitty_frame_count)?,
-        frame_delay: KITTY_FRAME_DELAY,
+        frame_paths,
+        frame_delay: MAGICIAN_FRAME_DELAY,
         image_id: KITTY_IMAGE_ID,
         attribution: None,
-        edge_inset_columns: KITTY_EDGE_INSET_COLUMNS,
-        edge_inset_rows: KITTY_EDGE_INSET_ROWS,
+        edge_inset_columns: MAGICIAN_EDGE_INSET_COLUMNS,
+        edge_inset_rows: MAGICIAN_EDGE_INSET_ROWS,
     })
 }
 
 fn kitty_frame_paths(frame_dir: &Path, frame_count: Option<usize>) -> Result<Vec<PathBuf>, String> {
     if let Some(count) = frame_count {
         let paths = (0..count)
-            .map(|index| frame_dir.join(format!("frame_{index}.png")))
+            .map(|index| explicit_count_frame_path(frame_dir, index))
             .collect::<Vec<_>>();
         ensure_kitty_frame_paths_exist(&paths)?;
         return Ok(paths);
@@ -276,6 +283,14 @@ fn kitty_frame_paths(frame_dir: &Path, frame_count: Option<usize>) -> Result<Vec
     paths.sort_by_key(|path| frame_path_sort_key(path));
     ensure_kitty_frame_paths_exist(&paths)?;
     Ok(paths)
+}
+
+fn explicit_count_frame_path(frame_dir: &Path, index: usize) -> PathBuf {
+    let padded = frame_dir.join(format!("frame_{index:03}.png"));
+    if padded.is_file() {
+        return padded;
+    }
+    frame_dir.join(format!("frame_{index}.png"))
 }
 
 fn frame_path_sort_key(path: &Path) -> (usize, usize, String) {
@@ -380,7 +395,7 @@ fn frame_delay(style: StandaloneStyle) -> Duration {
         StandaloneStyle::Boids(_) => Duration::from_millis(70),
         StandaloneStyle::Mandelbrot => mandelbrot_frame_delay(),
         StandaloneStyle::GameOfLife(_) => Duration::from_millis(160),
-        StandaloneStyle::KittyFrames => KITTY_FRAME_DELAY,
+        StandaloneStyle::KittyFrames => MAGICIAN_FRAME_DELAY,
     }
 }
 

@@ -59,6 +59,22 @@
             "--bin"
             "yzs"
           ];
+          nativeBuildInputs = [ pkgs.imagemagick ];
+          postInstall = ''
+            install -Dm644 assets/third_party/ascii_magician_1mposter.gif \
+              "$out/share/yazelix_screen/ascii_magician_1mposter.gif"
+            mkdir -p "$out/share/yazelix_screen/ascii_magician_1mposter_frames"
+            magick assets/third_party/ascii_magician_1mposter.gif -coalesce \
+              "$out/share/yazelix_screen/ascii_magician_1mposter_frames/frame_%03d.png"
+            frame_count="$(
+              find "$out/share/yazelix_screen/ascii_magician_1mposter_frames" \
+                -type f -name 'frame_*.png' | wc -l
+            )"
+            if [ "$frame_count" != "198" ]; then
+              echo "Expected 198 magician frames, got $frame_count" >&2
+              exit 1
+            fi
+          '';
 
           doCheck = false;
 
