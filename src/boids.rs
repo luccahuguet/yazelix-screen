@@ -1,14 +1,7 @@
 use crate::{
     GameOfLifeCellStyle, ScreenAnimationContext, ScreenCell, ScreenFrame, ScreenFrameProducer,
 };
-
-const ANSI_BLUE: &str = "\u{1b}[34m";
-const ANSI_GREEN: &str = "\u{1b}[32m";
-const ANSI_RED: &str = "\u{1b}[31m";
-const ANSI_YELLOW: &str = "\u{1b}[33m";
-const ANSI_PURPLE: &str = "\u{1b}[35m";
-const ANSI_CYAN: &str = "\u{1b}[36m";
-const ANSI_RESET: &str = "\u{1b}[0m";
+use crossterm::style::Color;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BoidsVariant {
@@ -480,14 +473,14 @@ fn boid_glyph_cells(
 
 fn colorize_boid_cell(index: usize, glyph: char) -> String {
     let palette = [
-        ANSI_RED,
-        ANSI_CYAN,
-        ANSI_BLUE,
-        ANSI_PURPLE,
-        ANSI_GREEN,
-        ANSI_YELLOW,
+        Color::Red,
+        Color::Cyan,
+        Color::Blue,
+        Color::Magenta,
+        Color::Green,
+        Color::Yellow,
     ];
-    format!("{}{}{}", palette[index % palette.len()], glyph, ANSI_RESET)
+    crate::terminal_control::styled(glyph, palette[index % palette.len()])
 }
 
 #[cfg(test)]

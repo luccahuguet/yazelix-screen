@@ -1,11 +1,6 @@
 use crate::{ScreenCell, ScreenFrame};
+use crossterm::style::Color;
 use std::collections::{HashMap, HashSet};
-
-const ANSI_GREEN: &str = "\u{1b}[32m";
-const ANSI_BLUE: &str = "\u{1b}[34m";
-const ANSI_PURPLE: &str = "\u{1b}[35m";
-const ANSI_CYAN: &str = "\u{1b}[36m";
-const ANSI_RESET: &str = "\u{1b}[0m";
 
 const RIGHT_GLIDER: &[(i32, i32)] = &[(1, 0), (2, 1), (0, 2), (1, 2), (2, 2)];
 const BLINKER: &[(i32, i32)] = &[(0, 0), (1, 0), (2, 0)];
@@ -347,13 +342,8 @@ pub fn step_game_of_life_cells(
 }
 
 fn colorize_game_of_life_glyph(x: usize, y: usize, glyph: char) -> String {
-    let palette = [ANSI_GREEN, ANSI_CYAN, ANSI_BLUE, ANSI_PURPLE];
-    format!(
-        "{}{}{}",
-        palette[(x + y) % palette.len()],
-        glyph,
-        ANSI_RESET
-    )
+    let palette = [Color::Green, Color::Cyan, Color::Blue, Color::Magenta];
+    crate::terminal_control::styled(glyph, palette[(x + y) % palette.len()])
 }
 
 pub fn build_game_of_life_screen_lines(

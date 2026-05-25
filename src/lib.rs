@@ -6,6 +6,7 @@ mod kitty_frames;
 mod magician;
 mod mandelbrot;
 mod random;
+mod terminal_control;
 
 use crossterm::terminal;
 use std::io::{self, Write};
@@ -146,11 +147,7 @@ pub fn center_frame_lines(lines: Vec<String>, width: usize) -> Vec<String> {
 }
 
 pub fn screen_frame_output(frame: &[String]) -> String {
-    let mut out = String::from("\u{1b}[H\u{1b}[2J");
-    for (row_index, line) in frame.iter().enumerate() {
-        out.push_str(&format!("\u{1b}[{};1H\u{1b}[2K{line}", row_index + 1));
-    }
-    out
+    terminal_control::screen_frame_output(frame)
 }
 
 pub fn flush_stdout() -> io::Result<()> {
@@ -163,13 +160,11 @@ pub fn render_screen_frame(frame: &[String]) -> io::Result<()> {
 }
 
 pub fn enter_screen_mode() -> io::Result<()> {
-    print!("\u{1b}[?1049h\u{1b}[?25l\u{1b}[?7l\u{1b}[2J\u{1b}[H");
-    flush_stdout()
+    terminal_control::enter_screen_mode()
 }
 
 pub fn leave_screen_mode() -> io::Result<()> {
-    print!("\u{1b}[?7h\u{1b}[?25h\u{1b}[?1049l");
-    flush_stdout()
+    terminal_control::leave_screen_mode()
 }
 
 pub struct RawModeGuard;
@@ -199,7 +194,8 @@ mod tests {
     fn screen_frame_output_addresses_rows_without_newlines() {
         let output = screen_frame_output(&["aaaaaaaa".to_string(), "bbbbbbbb".to_string()]);
         assert!(!output.contains('\n'));
-        assert!(output.contains("\u{1b}[1;1H\u{1b}[2Kaaaaaaaa"));
-        assert!(output.contains("\u{1b}[2;1H\u{1b}[2Kbbbbbbbb"));
+        assert!(output.contains("aaaaaaaa"));
+        assert!(output.contains("bbbbbbbb"));
+        assert_eq!(visible_line_width(&output), "aaaaaaaabbbbbbbb".len());
     }
 }

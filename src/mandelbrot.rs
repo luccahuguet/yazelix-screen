@@ -1,13 +1,7 @@
 use std::time::Duration;
 
 use crate::{ScreenAnimationContext, ScreenCell, ScreenFrame, ScreenFrameProducer};
-
-const ANSI_ELECTRIC_BLUE: &str = "\u{1b}[38;5;33m";
-const ANSI_VIOLET: &str = "\u{1b}[38;5;129m";
-const ANSI_HOT_PINK: &str = "\u{1b}[38;5;201m";
-const ANSI_ORANGE: &str = "\u{1b}[38;5;208m";
-const ANSI_SUN_YELLOW: &str = "\u{1b}[38;5;226m";
-const ANSI_RESET: &str = "\u{1b}[0m";
+use crossterm::style::Color;
 
 const MANDELBROT_LOOP_FRAMES: usize = 120;
 const MANDELBROT_RECURSIVE_PORTAL_START_PROGRESS: f64 = 0.68;
@@ -415,16 +409,16 @@ fn mandelbrot_cell(sample: MandelbrotSample, view: MandelbrotView) -> Option<Scr
 fn colorize_mandelbrot_cell(cell: ScreenCell) -> String {
     let phase = cell.color_x % 3;
     let color = match (cell.color_y, phase) {
-        (0 | 1, 0) => ANSI_ELECTRIC_BLUE,
-        (0 | 1, _) => ANSI_VIOLET,
-        (2 | 3, 0) => ANSI_VIOLET,
-        (2 | 3, _) => ANSI_HOT_PINK,
-        (4 | 5, 2) => ANSI_ORANGE,
-        (4 | 5, _) => ANSI_HOT_PINK,
-        (_, 2) => ANSI_SUN_YELLOW,
-        _ => ANSI_ORANGE,
+        (0 | 1, 0) => Color::AnsiValue(33),
+        (0 | 1, _) => Color::AnsiValue(129),
+        (2 | 3, 0) => Color::AnsiValue(129),
+        (2 | 3, _) => Color::AnsiValue(201),
+        (4 | 5, 2) => Color::AnsiValue(208),
+        (4 | 5, _) => Color::AnsiValue(201),
+        (_, 2) => Color::AnsiValue(226),
+        _ => Color::AnsiValue(208),
     };
-    format!("{color}{}{}", cell.glyph, ANSI_RESET)
+    crate::terminal_control::styled(cell.glyph, color)
 }
 
 #[cfg(test)]

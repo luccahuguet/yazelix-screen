@@ -1,0 +1,72 @@
+use crossterm::{
+    cursor::{Hide, MoveTo, Show},
+    execute, queue,
+    style::{Color, Print, SetForegroundColor},
+    terminal::{
+        Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+};
+use std::io::{self, Write};
+
+fn command_string(write_commands: impl FnOnce(&mut Vec<u8>) -> io::Result<()>) -> String {
+    crossterm::style::force_color_output(true);
+    let mut output = Vec::new();
+    write_commands(&mut output).expect("crossterm command writes to memory");
+    String::from_utf8(output).expect("crossterm commands emit UTF-8")
+}
+
+pub(crate) fn styled(text: impl ToString, color: Color) -> String {
+    command_string(|output| {
+        queue!(
+            output,
+            SetForegroundColor(color),
+            Print(text.to_string()),
+            SetForegroundColor(Color::Reset)
+        )?;
+        Ok(())
+    })
+}
+
+pub(crate) fn screen_frame_output(frame: &[String]) -> String {
+    command_string(|output| {
+        queue!(output, MoveTo(0, 0), Clear(ClearType::All))?;
+        for (row_index, line) in frame.iter().enumerate() {
+            queue!(
+                output,
+                MoveTo(0, row_index.min(u16::MAX as usize) as u16),
+                Clear(ClearType::CurrentLine),
+                Print(line)
+            )?;
+        }
+        Ok(())
+    })
+}
+
+pub(crate) fn clear_screen_sequence() -> String {
+    command_string(|output| {
+        queue!(output, MoveTo(0, 0), Clear(ClearType::All))?;
+        Ok(())
+    })
+}
+
+pub(crate) fn enter_screen_mode() -> io::Result<()> {
+    crossterm::style::force_color_output(true);
+    let mut stdout = io::stdout();
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        Hide,
+        DisableLineWrap,
+        Clear(ClearType::All),
+        MoveTo(0, 0)
+    )?;
+    stdout.flush()
+}
+
+pub(crate) fn leave_screen_mode() -> io::Result<()> {
+    crossterm::style::force_color_output(true);
+    let mut stdout = io::stdout();
+    execute!(stdout, EnableLineWrap, Show, LeaveAlternateScreen)?;
+    stdout.flush()
+}

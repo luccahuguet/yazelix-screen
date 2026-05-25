@@ -61,7 +61,11 @@ pub fn kitty_delete_image_command(image_id: u32) -> String {
 }
 
 pub fn cleanup_kitty_image(image_id: u32) -> io::Result<()> {
-    print!("{}\u{1b}[H\u{1b}[2J", kitty_delete_image_command(image_id));
+    print!(
+        "{}{}",
+        kitty_delete_image_command(image_id),
+        crate::terminal_control::clear_screen_sequence()
+    );
     crate::flush_stdout()
 }
 
@@ -86,7 +90,7 @@ pub fn draw_kitty_png_frame(
     );
     let frame_path = &sequence.frame_paths[frame_index % sequence.frame_paths.len()];
 
-    print!("\u{1b}[H\u{1b}[2J");
+    print!("{}", crate::terminal_control::clear_screen_sequence());
     for _ in 0..layout.top_padding {
         println!();
     }
