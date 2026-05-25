@@ -30,8 +30,8 @@ pub use magician::{
     MAGICIAN_ATTRIBUTION, MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS,
     MAGICIAN_FRAME_COUNT, MAGICIAN_FRAME_DELAY, MAGICIAN_FRAME_DIR_NAME, MAGICIAN_GIF_NAME,
     bundled_magician_frame_dir_from_exe, default_magician_frame_dir, magician_frame_path,
-    magician_frame_paths, magician_frame_sequence, require_magician_frame_assets,
-    source_magician_frame_dir,
+    magician_frame_paths, magician_frame_sequence, magician_frame_sequence_with_edge_insets,
+    require_magician_frame_assets, source_magician_frame_dir,
 };
 pub use mandelbrot::{
     MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_frame_delay,

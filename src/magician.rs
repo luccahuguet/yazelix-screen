@@ -42,13 +42,29 @@ pub fn magician_frame_sequence(
     image_id: u32,
     attribution: Option<String>,
 ) -> KittyFrameSequence {
+    magician_frame_sequence_with_edge_insets(
+        frame_dir,
+        image_id,
+        attribution,
+        MAGICIAN_EDGE_INSET_COLUMNS,
+        MAGICIAN_EDGE_INSET_ROWS,
+    )
+}
+
+pub fn magician_frame_sequence_with_edge_insets(
+    frame_dir: &Path,
+    image_id: u32,
+    attribution: Option<String>,
+    edge_inset_columns: usize,
+    edge_inset_rows: usize,
+) -> KittyFrameSequence {
     KittyFrameSequence {
         frame_paths: magician_frame_paths(frame_dir),
         frame_delay: MAGICIAN_FRAME_DELAY,
         image_id,
         attribution,
-        edge_inset_columns: MAGICIAN_EDGE_INSET_COLUMNS,
-        edge_inset_rows: MAGICIAN_EDGE_INSET_ROWS,
+        edge_inset_columns,
+        edge_inset_rows,
     }
 }
 
@@ -109,5 +125,21 @@ mod tests {
         assert_eq!(sequence.attribution.as_deref(), Some("credit"));
         assert_eq!(sequence.edge_inset_columns, MAGICIAN_EDGE_INSET_COLUMNS);
         assert_eq!(sequence.edge_inset_rows, MAGICIAN_EDGE_INSET_ROWS);
+    }
+
+    // Defends: integrated consumers can choose pane-chrome-specific padding without changing the standalone magician default.
+    #[test]
+    fn magician_frame_sequence_accepts_consumer_owned_edge_insets() {
+        let frame_dir = Path::new("/runtime/magician");
+        let sequence = magician_frame_sequence_with_edge_insets(
+            frame_dir,
+            77,
+            Some("credit".to_string()),
+            12,
+            14,
+        );
+
+        assert_eq!(sequence.edge_inset_columns, 12);
+        assert_eq!(sequence.edge_inset_rows, 14);
     }
 }
