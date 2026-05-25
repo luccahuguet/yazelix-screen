@@ -9,8 +9,8 @@ pub const MAGICIAN_FRAME_COUNT: usize = 198;
 pub const MAGICIAN_FRAME_DELAY: Duration = Duration::from_millis(90);
 pub const MAGICIAN_FRAME_DIR_NAME: &str = "ascii_magician_1mposter_frames";
 pub const MAGICIAN_GIF_NAME: &str = "ascii_magician_1mposter.gif";
-pub const MAGICIAN_EDGE_INSET_COLUMNS: usize = 4;
-pub const MAGICIAN_EDGE_INSET_ROWS: usize = 4;
+pub const MAGICIAN_EDGE_INSET_COLUMNS: usize = 8;
+pub const MAGICIAN_EDGE_INSET_ROWS: usize = 8;
 
 pub fn magician_frame_path(frame_dir: &Path, frame_index: usize) -> PathBuf {
     frame_dir.join(format!(

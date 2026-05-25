@@ -194,12 +194,12 @@ mod tests {
     #[test]
     fn kitty_frame_layout_preserves_edge_inset() {
         assert_eq!(
-            kitty_frame_layout(120, 40, 4, 4),
+            kitty_frame_layout(120, 40, 8, 8),
             KittyFrameLayout {
-                columns: 62,
-                rows: 31,
-                top_padding: 4,
-                left_padding: 29,
+                columns: 46,
+                rows: 23,
+                top_padding: 8,
+                left_padding: 37,
             }
         );
     }
