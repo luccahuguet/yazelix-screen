@@ -29,9 +29,12 @@ pub use kitty_frames::{
 pub use magician::{
     MAGICIAN_ATTRIBUTION, MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS,
     MAGICIAN_FRAME_COUNT, MAGICIAN_FRAME_DELAY, MAGICIAN_FRAME_DIR_NAME, MAGICIAN_GIF_NAME,
-    bundled_magician_frame_dir_from_exe, default_magician_frame_dir, magician_frame_path,
+    bundled_magician_frame_dir_from_exe, bundled_magician_gif_from_exe,
+    default_magician_cache_frame_dir, default_magician_frame_dir, default_magician_gif_path,
+    ensure_default_magician_frame_dir, generate_magician_frame_assets, imagemagick_available,
+    magician_default_generation_available, magician_frame_assets_available, magician_frame_path,
     magician_frame_paths, magician_frame_sequence, magician_frame_sequence_with_edge_insets,
-    require_magician_frame_assets, source_magician_frame_dir,
+    require_magician_frame_assets, source_magician_frame_dir, source_magician_gif_path,
 };
 pub use mandelbrot::{
     MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_frame_delay,
@@ -39,7 +42,9 @@ pub use mandelbrot::{
 };
 pub use random::{
     BOIDS_RANDOM_STYLES, GAME_OF_LIFE_RANDOM_STYLES, KITTY_FRAME_SEQUENCE_STYLE, MANDELBROT_STYLE,
-    random_animation_slot_count, random_animation_styles, resolve_random_animation_style,
+    random_animation_slot_count, random_animation_slot_count_with_magician,
+    random_animation_styles, random_animation_styles_with_magician, resolve_random_animation_style,
+    resolve_random_animation_style_with_magician,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

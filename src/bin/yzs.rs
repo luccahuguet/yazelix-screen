@@ -7,10 +7,11 @@ use yazelix_screen::{
     GameOfLifeCellStyle, KITTY_FRAME_SEQUENCE_STYLE, KittyFrameSequence,
     MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS, MAGICIAN_FRAME_DELAY, MANDELBROT_STYLE,
     MandelbrotAnimation, RawModeGuard, ScreenAnimationContext, ScreenFrameProducer,
-    default_magician_frame_dir, enter_screen_mode, game_of_life_spec, is_game_of_life_style,
-    leave_screen_mode, magician_frame_paths, mandelbrot_frame_delay, play_kitty_png_frame_sequence,
-    render_screen_frame, require_magician_frame_assets, resolve_random_animation_style,
-    terminal_height, terminal_width,
+    default_magician_frame_dir, ensure_default_magician_frame_dir, enter_screen_mode,
+    game_of_life_spec, is_game_of_life_style, leave_screen_mode,
+    magician_default_generation_available, magician_frame_paths, mandelbrot_frame_delay,
+    play_kitty_png_frame_sequence, render_screen_frame, require_magician_frame_assets,
+    resolve_random_animation_style_with_magician, terminal_height, terminal_width,
 };
 
 const KITTY_IMAGE_ID: u32 = 7_930_000;
@@ -148,7 +149,10 @@ fn print_help() {
     println!();
     println!("Notes:");
     println!("  Runs outside Zellij and outside a Yazelix session");
-    println!("  packaged magician uses bundled frames; source runs can pass --kitty-frame-dir");
+    println!("  random skips magician unless PNG frames or host ImageMagick are available");
+    println!(
+        "  magician can generate cached frames with host ImageMagick or use --kitty-frame-dir"
+    );
     println!("  Press any key to exit");
 }
 
@@ -196,9 +200,25 @@ fn run_screen(args: Args) -> Result<(), String> {
 }
 
 fn resolve_style(raw: &str, random_index: Option<usize>) -> Result<StandaloneStyle, String> {
+    resolve_style_with_magician_availability(
+        raw,
+        random_index,
+        magician_default_generation_available(),
+    )
+}
+
+fn resolve_style_with_magician_availability(
+    raw: &str,
+    random_index: Option<usize>,
+    include_magician: bool,
+) -> Result<StandaloneStyle, String> {
     let normalized = raw.trim().to_ascii_lowercase();
     if normalized == "random" {
-        return resolve_style(resolve_random_animation_style(random_index), None);
+        return resolve_style_with_magician_availability(
+            resolve_random_animation_style_with_magician(random_index, include_magician),
+            None,
+            include_magician,
+        );
     }
 
     if let Some(variant) = BoidsVariant::from_style_name(&normalized) {
@@ -226,13 +246,16 @@ fn resolve_style(raw: &str, random_index: Option<usize>) -> Result<StandaloneSty
 
 fn build_kitty_frame_sequence(args: &Args) -> Result<KittyFrameSequence, String> {
     let explicit_frame_dir = args.kitty_frame_dir.clone();
-    let frame_dir = explicit_frame_dir
-        .clone()
-        .or_else(default_magician_frame_dir)
-        .ok_or_else(|| {
-            "Style `magician` requires bundled PNG frames or --kitty-frame-dir. Try the packaged `yzs magician`, or pass `--kitty-frame-dir /path/to/frames` from source"
-                .to_string()
-        })?;
+    let frame_dir = explicit_frame_dir.clone().map(Ok).unwrap_or_else(|| {
+        default_magician_frame_dir()
+            .map(Ok)
+            .unwrap_or_else(|| ensure_default_magician_frame_dir())
+    })
+    .map_err(|error| {
+        format!(
+            "Style `magician` requires PNG frames or host ImageMagick: {error}. Install ImageMagick `magick`, or pass --kitty-frame-dir /path/to/frames"
+        )
+    })?;
     let frame_paths = if explicit_frame_dir.is_none() && args.kitty_frame_count.is_none() {
         require_magician_frame_assets(&frame_dir).map_err(|error| error.to_string())?;
         magician_frame_paths(&frame_dir)
@@ -447,14 +470,36 @@ mod tests {
         assert!(resolve_style("logo", None).is_err());
     }
 
-    // Defends: random standalone playback uses the shared Yazelix animation-family resolver, including Kitty frame sequences.
+    // Defends: random standalone playback skips image-backed magician unless default frame assets can be generated or resolved.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn random_style_resolves_inside_shared_pool() {
+    fn random_style_skips_magician_when_unavailable() {
         let mut saw_kitty_frames = false;
 
         for index in 0..yazelix_screen::random_animation_slot_count() * 2 {
-            let resolved = resolve_style("random", Some(index)).unwrap();
+            let resolved =
+                resolve_style_with_magician_availability("random", Some(index), false).unwrap();
+            saw_kitty_frames |= resolved == StandaloneStyle::KittyFrames;
+            assert!(matches!(
+                resolved,
+                StandaloneStyle::Boids(_)
+                    | StandaloneStyle::GameOfLife(_)
+                    | StandaloneStyle::Mandelbrot
+            ));
+        }
+
+        assert!(!saw_kitty_frames);
+    }
+
+    // Defends: hosts that can resolve magician assets can opt random back into the image-backed family.
+    // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
+    #[test]
+    fn random_style_can_include_magician_when_available() {
+        let mut saw_kitty_frames = false;
+
+        for index in 0..yazelix_screen::random_animation_slot_count_with_magician(true) * 2 {
+            let resolved =
+                resolve_style_with_magician_availability("random", Some(index), true).unwrap();
             saw_kitty_frames |= resolved == StandaloneStyle::KittyFrames;
             assert!(matches!(
                 resolved,

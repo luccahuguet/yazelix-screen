@@ -72,9 +72,9 @@ Supported styles:
 
 No style means `random`
 
-The packaged `magician` style uses bundled PNG frames generated from the source GIF during the Nix build. Source-tree runs can pass `--kitty-frame-dir`; with `--kitty-frame-count N`, `yzs` accepts `frame_000.png` through `frame_N-1.png` or unpadded `frame_0.png` names
+The packaged `magician` style does not generate or ship expanded PNG frames during Nix builds. When `magician` is requested explicitly, `yzs` uses existing bundled/source/cache frames, or generates cached frames from the bundled GIF with host ImageMagick `magick` when available. Source-tree runs can pass `--kitty-frame-dir`; with `--kitty-frame-count N`, `yzs` accepts `frame_000.png` through `frame_N-1.png` or unpadded `frame_0.png` names
 
-`random` uses the same four-family pool as Yazelix and can resolve to `magician`
+`random` skips `magician` unless those frame assets can be resolved or generated
 
 ## Library Examples
 
