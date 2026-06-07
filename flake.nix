@@ -59,10 +59,6 @@
             "--bin"
             "yzs"
           ];
-          postInstall = ''
-            install -Dm644 assets/third_party/ascii_magician_1mposter.gif \
-              "$out/share/yazelix_screen/ascii_magician_1mposter.gif"
-          '';
 
           doCheck = false;
 

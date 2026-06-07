@@ -8,7 +8,6 @@ The user-facing command is `yzs`
 nix run github:luccahuguet/yazelix-screen#yzs
 nix run github:luccahuguet/yazelix-screen#yzs -- mandelbrot
 nix run github:luccahuguet/yazelix-screen#yzs -- game_of_life_bloom --cell-style dotted
-nix run github:luccahuguet/yazelix-screen#yzs -- magician
 ```
 
 ## What It Contains
@@ -29,7 +28,6 @@ yzs --help
 yzs
 yzs mandelbrot
 yzs game_of_life_bloom --cell-style dotted
-yzs magician
 ```
 
 Yazelix users get the integrated screen surface through the main command:
@@ -47,7 +45,6 @@ From this repository:
 cargo run --bin yzs -- --help
 cargo run --bin yzs -- mandelbrot
 cargo run --bin yzs -- game_of_life_bloom --cell-style dotted
-cargo run --bin yzs -- magician --kitty-frame-dir /path/to/frames
 ```
 
 With Nix:
@@ -64,17 +61,12 @@ Supported styles:
 - `boids_predator`
 - `boids_schools`
 - `mandelbrot`
-- `magician`
 - `game_of_life_gliders`
 - `game_of_life_oscillators`
 - `game_of_life_bloom`
 - `random`
 
 No style means `random`
-
-The packaged `magician` style does not generate or ship expanded PNG frames during Nix builds. When `magician` is requested explicitly, `yzs` uses existing bundled/source/cache frames, or generates cached frames from the bundled GIF with host ImageMagick `magick` when available. Source-tree runs can pass `--kitty-frame-dir`; with `--kitty-frame-count N`, `yzs` accepts `frame_000.png` through `frame_N-1.png` or unpadded `frame_0.png` names
-
-`random` skips `magician` unless those frame assets can be resolved or generated
 
 ## Library Examples
 

@@ -3,7 +3,6 @@
 mod boids;
 mod game_of_life;
 mod kitty_frames;
-mod magician;
 mod mandelbrot;
 mod random;
 mod terminal_control;
@@ -26,25 +25,13 @@ pub use kitty_frames::{
     kitty_delete_image_command, kitty_frame_layout, kitty_png_file_command,
     play_kitty_png_frame_sequence,
 };
-pub use magician::{
-    MAGICIAN_ATTRIBUTION, MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS,
-    MAGICIAN_FRAME_COUNT, MAGICIAN_FRAME_DELAY, MAGICIAN_FRAME_DIR_NAME, MAGICIAN_GIF_NAME,
-    bundled_magician_frame_dir_from_exe, bundled_magician_gif_from_exe,
-    default_magician_cache_frame_dir, default_magician_frame_dir, default_magician_gif_path,
-    ensure_default_magician_frame_dir, generate_magician_frame_assets, imagemagick_available,
-    magician_default_generation_available, magician_frame_assets_available, magician_frame_path,
-    magician_frame_paths, magician_frame_sequence, magician_frame_sequence_with_edge_insets,
-    require_magician_frame_assets, source_magician_frame_dir, source_magician_gif_path,
-};
 pub use mandelbrot::{
     MandelbrotAnimation, mandelbrot_escape_iterations, mandelbrot_frame_delay,
     mandelbrot_max_iterations,
 };
 pub use random::{
-    BOIDS_RANDOM_STYLES, GAME_OF_LIFE_RANDOM_STYLES, KITTY_FRAME_SEQUENCE_STYLE, MANDELBROT_STYLE,
-    random_animation_slot_count, random_animation_slot_count_with_magician,
-    random_animation_styles, random_animation_styles_with_magician, resolve_random_animation_style,
-    resolve_random_animation_style_with_magician,
+    BOIDS_RANDOM_STYLES, GAME_OF_LIFE_RANDOM_STYLES, MANDELBROT_STYLE, random_animation_slot_count,
+    random_animation_styles, resolve_random_animation_style,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

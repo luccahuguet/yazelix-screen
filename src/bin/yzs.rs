@@ -1,35 +1,24 @@
 use crossterm::event::{self, Event};
-use std::fs;
-use std::path::{Path, PathBuf};
 use std::time::Duration;
 use yazelix_screen::{
     BoidsAnimation, BoidsVariant, GAME_OF_LIFE_RANDOM_STYLES, GameOfLifeAnimation,
-    GameOfLifeCellStyle, KITTY_FRAME_SEQUENCE_STYLE, KittyFrameSequence,
-    MAGICIAN_EDGE_INSET_COLUMNS, MAGICIAN_EDGE_INSET_ROWS, MAGICIAN_FRAME_DELAY, MANDELBROT_STYLE,
-    MandelbrotAnimation, RawModeGuard, ScreenAnimationContext, ScreenFrameProducer,
-    default_magician_frame_dir, ensure_default_magician_frame_dir, enter_screen_mode,
-    game_of_life_spec, is_game_of_life_style, leave_screen_mode,
-    magician_default_generation_available, magician_frame_paths, mandelbrot_frame_delay,
-    play_kitty_png_frame_sequence, render_screen_frame, require_magician_frame_assets,
-    resolve_random_animation_style_with_magician, terminal_height, terminal_width,
+    GameOfLifeCellStyle, MANDELBROT_STYLE, MandelbrotAnimation, RawModeGuard,
+    ScreenAnimationContext, ScreenFrameProducer, enter_screen_mode, game_of_life_spec,
+    is_game_of_life_style, leave_screen_mode, mandelbrot_frame_delay, render_screen_frame,
+    resolve_random_animation_style, terminal_height, terminal_width,
 };
-
-const KITTY_IMAGE_ID: u32 = 7_930_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum StandaloneStyle {
     Boids(BoidsVariant),
     GameOfLife(&'static str),
     Mandelbrot,
-    KittyFrames,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Args {
     style: String,
     cell_style: GameOfLifeCellStyle,
-    kitty_frame_dir: Option<PathBuf>,
-    kitty_frame_count: Option<usize>,
     help: bool,
 }
 
@@ -72,8 +61,6 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
     let mut help = false;
     let mut style = None;
     let mut cell_style = GameOfLifeCellStyle::FullBlock;
-    let mut kitty_frame_dir = None;
-    let mut kitty_frame_count = None;
     let mut iter = args.into_iter();
 
     while let Some(arg) = iter.next() {
@@ -90,29 +77,6 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
                     )
                 })?;
             }
-            "--kitty-frame-dir" => {
-                let Some(raw) = iter.next() else {
-                    return Err("Missing value after --kitty-frame-dir".to_string());
-                };
-                kitty_frame_dir = Some(PathBuf::from(raw));
-            }
-            "--kitty-frame-count" => {
-                let Some(raw) = iter.next() else {
-                    return Err("Missing value after --kitty-frame-count".to_string());
-                };
-                let count = raw.parse::<usize>().map_err(|_| {
-                    format!(
-                        "Invalid --kitty-frame-count value `{raw}`. Expected a positive integer"
-                    )
-                })?;
-                if count == 0 {
-                    return Err(
-                        "Invalid --kitty-frame-count value `0`. Expected a positive integer"
-                            .to_string(),
-                    );
-                }
-                kitty_frame_count = Some(count);
-            }
             other if style.is_none() => style = Some(other.to_string()),
             other => {
                 return Err(format!("Unexpected argument `{other}`. Try `yzs --help`"));
@@ -123,8 +87,6 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
     Ok(Args {
         style: style.unwrap_or_else(|| "random".to_string()),
         cell_style,
-        kitty_frame_dir,
-        kitty_frame_count,
         help,
     })
 }
@@ -134,14 +96,12 @@ fn print_help() {
     println!();
     println!("Usage:");
     println!("  yzs [STYLE] [--cell-style full_block|dotted]");
-    println!("      [--kitty-frame-dir DIR] [--kitty-frame-count N]");
     println!();
     println!("Styles:");
     println!("  boids");
     println!("  boids_predator");
     println!("  boids_schools");
     println!("  mandelbrot");
-    println!("  magician");
     println!("  game_of_life_gliders");
     println!("  game_of_life_oscillators");
     println!("  game_of_life_bloom");
@@ -149,28 +109,15 @@ fn print_help() {
     println!();
     println!("Notes:");
     println!("  Runs outside Zellij and outside a Yazelix session");
-    println!("  random skips magician unless PNG frames or host ImageMagick are available");
-    println!(
-        "  magician can generate cached frames with host ImageMagick or use --kitty-frame-dir"
-    );
     println!("  Press any key to exit");
 }
 
 fn run_screen(args: Args) -> Result<(), String> {
     let resolved_style = resolve_style(&args.style, None)?;
-    let kitty_sequence = match resolved_style {
-        StandaloneStyle::KittyFrames => Some(build_kitty_frame_sequence(&args)?),
-        _ => None,
-    };
 
     let _raw = RawModeGuard::new().map_err(|error| format!("Could not enter raw mode: {error}"))?;
     let _screen = ScreenModeGuard::new()
         .map_err(|error| format!("Could not enter alternate screen mode: {error}"))?;
-
-    if let Some(sequence) = kitty_sequence {
-        return play_kitty_png_frame_sequence(&sequence, None, terminal_width, terminal_height)
-            .map_err(|error| format!("Could not render Kitty frame sequence: {error}"));
-    }
 
     let mut width = terminal_width();
     let mut height = terminal_height();
@@ -200,25 +147,9 @@ fn run_screen(args: Args) -> Result<(), String> {
 }
 
 fn resolve_style(raw: &str, random_index: Option<usize>) -> Result<StandaloneStyle, String> {
-    resolve_style_with_magician_availability(
-        raw,
-        random_index,
-        magician_default_generation_available(),
-    )
-}
-
-fn resolve_style_with_magician_availability(
-    raw: &str,
-    random_index: Option<usize>,
-    include_magician: bool,
-) -> Result<StandaloneStyle, String> {
     let normalized = raw.trim().to_ascii_lowercase();
     if normalized == "random" {
-        return resolve_style_with_magician_availability(
-            resolve_random_animation_style_with_magician(random_index, include_magician),
-            None,
-            include_magician,
-        );
+        return resolve_style(resolve_random_animation_style(random_index), None);
     }
 
     if let Some(variant) = BoidsVariant::from_style_name(&normalized) {
@@ -226,9 +157,6 @@ fn resolve_style_with_magician_availability(
     }
     if normalized == MANDELBROT_STYLE {
         return Ok(StandaloneStyle::Mandelbrot);
-    }
-    if normalized == KITTY_FRAME_SEQUENCE_STYLE {
-        return Ok(StandaloneStyle::KittyFrames);
     }
     if is_game_of_life_style(&normalized) {
         let style = GAME_OF_LIFE_RANDOM_STYLES
@@ -242,105 +170,6 @@ fn resolve_style_with_magician_availability(
     Err(format!(
         "Unsupported standalone yzs style `{normalized}`. Try `yzs --help`"
     ))
-}
-
-fn build_kitty_frame_sequence(args: &Args) -> Result<KittyFrameSequence, String> {
-    let explicit_frame_dir = args.kitty_frame_dir.clone();
-    let frame_dir = explicit_frame_dir.clone().map(Ok).unwrap_or_else(|| {
-        default_magician_frame_dir()
-            .map(Ok)
-            .unwrap_or_else(|| ensure_default_magician_frame_dir())
-    })
-    .map_err(|error| {
-        format!(
-            "Style `magician` requires PNG frames or host ImageMagick: {error}. Install ImageMagick `magick`, or pass --kitty-frame-dir /path/to/frames"
-        )
-    })?;
-    let frame_paths = if explicit_frame_dir.is_none() && args.kitty_frame_count.is_none() {
-        require_magician_frame_assets(&frame_dir).map_err(|error| error.to_string())?;
-        magician_frame_paths(&frame_dir)
-    } else {
-        kitty_frame_paths(&frame_dir, args.kitty_frame_count)?
-    };
-
-    Ok(KittyFrameSequence {
-        frame_paths,
-        frame_delay: MAGICIAN_FRAME_DELAY,
-        image_id: KITTY_IMAGE_ID,
-        attribution: None,
-        edge_inset_columns: MAGICIAN_EDGE_INSET_COLUMNS,
-        edge_inset_rows: MAGICIAN_EDGE_INSET_ROWS,
-    })
-}
-
-fn kitty_frame_paths(frame_dir: &Path, frame_count: Option<usize>) -> Result<Vec<PathBuf>, String> {
-    if let Some(count) = frame_count {
-        let paths = (0..count)
-            .map(|index| explicit_count_frame_path(frame_dir, index))
-            .collect::<Vec<_>>();
-        ensure_kitty_frame_paths_exist(&paths)?;
-        return Ok(paths);
-    }
-
-    let mut paths = fs::read_dir(frame_dir)
-        .map_err(|error| {
-            format!(
-                "Could not read Kitty frame directory `{}`: {error}",
-                frame_dir.display()
-            )
-        })?
-        .map(|entry| entry.map(|entry| entry.path()))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| {
-            format!(
-                "Could not inspect Kitty frame directory `{}`: {error}",
-                frame_dir.display()
-            )
-        })?;
-
-    paths.retain(|path| {
-        path.extension()
-            .and_then(|extension| extension.to_str())
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("png"))
-    });
-    paths.sort_by_key(|path| frame_path_sort_key(path));
-    ensure_kitty_frame_paths_exist(&paths)?;
-    Ok(paths)
-}
-
-fn explicit_count_frame_path(frame_dir: &Path, index: usize) -> PathBuf {
-    let padded = frame_dir.join(format!("frame_{index:03}.png"));
-    if padded.is_file() {
-        return padded;
-    }
-    frame_dir.join(format!("frame_{index}.png"))
-}
-
-fn frame_path_sort_key(path: &Path) -> (usize, usize, String) {
-    let stem = path
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .unwrap_or("");
-    let number = stem
-        .rsplit_once('_')
-        .and_then(|(_, raw)| raw.parse::<usize>().ok());
-
-    match number {
-        Some(number) => (0, number, stem.to_string()),
-        None => (1, usize::MAX, stem.to_string()),
-    }
-}
-
-fn ensure_kitty_frame_paths_exist(paths: &[PathBuf]) -> Result<(), String> {
-    if paths.is_empty() {
-        return Err("Kitty frame directory does not contain any PNG frames".to_string());
-    }
-
-    if let Some(missing) = paths.iter().find(|path| !path.is_file()) {
-        return Err(format!("Missing Kitty frame asset: {}", missing.display()));
-    }
-
-    Ok(())
 }
 
 fn build_animation(
@@ -358,9 +187,6 @@ fn build_animation(
             Box::new(GameOfLifeAnimation::new(style_name, context, cell_style))
         }
         StandaloneStyle::Mandelbrot => Box::new(MandelbrotAnimation::new(context)),
-        StandaloneStyle::KittyFrames => {
-            unreachable!("Kitty frame sequences do not use the text animation engine")
-        }
     }
 }
 
@@ -371,7 +197,7 @@ fn context_for_style(
 ) -> ScreenAnimationContext {
     match style {
         StandaloneStyle::GameOfLife(_) => game_of_life_context(width, height),
-        StandaloneStyle::Boids(_) | StandaloneStyle::Mandelbrot | StandaloneStyle::KittyFrames => {
+        StandaloneStyle::Boids(_) | StandaloneStyle::Mandelbrot => {
             full_screen_context(width, height)
         }
     }
@@ -418,7 +244,6 @@ fn frame_delay(style: StandaloneStyle) -> Duration {
         StandaloneStyle::Boids(_) => Duration::from_millis(70),
         StandaloneStyle::Mandelbrot => mandelbrot_frame_delay(),
         StandaloneStyle::GameOfLife(_) => Duration::from_millis(160),
-        StandaloneStyle::KittyFrames => MAGICIAN_FRAME_DELAY,
     }
 }
 
@@ -462,24 +287,21 @@ mod tests {
             resolve_style("mandelbrot", None).unwrap(),
             StandaloneStyle::Mandelbrot
         );
-        assert_eq!(
-            resolve_style("magician", None).unwrap(),
-            StandaloneStyle::KittyFrames
-        );
+        assert!(resolve_style("magician", None).is_err());
         assert!(resolve_style("static", None).is_err());
         assert!(resolve_style("logo", None).is_err());
     }
 
-    // Defends: random standalone playback skips image-backed magician unless default frame assets can be generated or resolved.
+    // Defends: random standalone playback never reports the deleted image-backed magician style.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn random_style_skips_magician_when_unavailable() {
-        let mut saw_kitty_frames = false;
-
+    fn random_style_skips_magician() {
         for index in 0..yazelix_screen::random_animation_slot_count() * 2 {
-            let resolved =
-                resolve_style_with_magician_availability("random", Some(index), false).unwrap();
-            saw_kitty_frames |= resolved == StandaloneStyle::KittyFrames;
+            assert_ne!(
+                yazelix_screen::resolve_random_animation_style(Some(index)),
+                "magician"
+            );
+            let resolved = resolve_style("random", Some(index)).unwrap();
             assert!(matches!(
                 resolved,
                 StandaloneStyle::Boids(_)
@@ -487,30 +309,6 @@ mod tests {
                     | StandaloneStyle::Mandelbrot
             ));
         }
-
-        assert!(!saw_kitty_frames);
-    }
-
-    // Defends: hosts that can resolve magician assets can opt random back into the image-backed family.
-    // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
-    #[test]
-    fn random_style_can_include_magician_when_available() {
-        let mut saw_kitty_frames = false;
-
-        for index in 0..yazelix_screen::random_animation_slot_count_with_magician(true) * 2 {
-            let resolved =
-                resolve_style_with_magician_availability("random", Some(index), true).unwrap();
-            saw_kitty_frames |= resolved == StandaloneStyle::KittyFrames;
-            assert!(matches!(
-                resolved,
-                StandaloneStyle::Boids(_)
-                    | StandaloneStyle::GameOfLife(_)
-                    | StandaloneStyle::Mandelbrot
-                    | StandaloneStyle::KittyFrames
-            ));
-        }
-
-        assert!(saw_kitty_frames);
     }
 
     // Defends: standalone Game of Life keeps the same minimum-width sizing contract as the integrated screen renderer.
@@ -540,29 +338,21 @@ mod tests {
 
         assert_eq!(parsed.style, "game_of_life_gliders");
         assert_eq!(parsed.cell_style, GameOfLifeCellStyle::Dotted);
-        assert_eq!(parsed.kitty_frame_dir, None);
-        assert_eq!(parsed.kitty_frame_count, None);
         assert!(!parsed.help);
     }
 
-    // Defends: standalone Kitty playback is opt-in to caller-provided frame assets instead of borrowing Yazelix runtime paths.
+    // Regression: the deleted magician style must not remain accepted through standalone CLI arguments.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn parse_args_accepts_kitty_frame_assets() {
+    fn parse_args_rejects_stale_kitty_frame_assets() {
         let parsed = parse_args([
             "magician".to_string(),
             "--kitty-frame-dir".to_string(),
             "/tmp/magician_frames".to_string(),
             "--kitty-frame-count".to_string(),
             "198".to_string(),
-        ])
-        .unwrap();
+        ]);
 
-        assert_eq!(parsed.style, "magician");
-        assert_eq!(
-            parsed.kitty_frame_dir,
-            Some(PathBuf::from("/tmp/magician_frames"))
-        );
-        assert_eq!(parsed.kitty_frame_count, Some(198));
+        assert!(parsed.is_err());
     }
 }
