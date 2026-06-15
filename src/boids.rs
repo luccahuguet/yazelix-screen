@@ -418,7 +418,7 @@ const BODY: BoidSpriteTone = BoidSpriteTone::Body;
 const FIN: BoidSpriteTone = BoidSpriteTone::Fin;
 const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidSpriteCell; 14] = [
+const PREY_EAST: [BoidSpriteCell; 12] = [
     sprite_cell(1, 0, TAIL, BOID_LOWER_HALF),
     sprite_cell(5, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(0, 1, TAIL, BOID_UPPER_HALF),
@@ -431,8 +431,6 @@ const PREY_EAST: [BoidSpriteCell; 14] = [
     sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(8, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(9, 1, HEAD, BOID_TOP_RIGHT),
-    sprite_cell(1, 2, TAIL, BOID_UPPER_HALF),
-    sprite_cell(5, 2, FIN, BOID_UPPER_HALF),
 ];
 const PREY_SOUTH_EAST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
@@ -461,7 +459,7 @@ const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
 ];
-const PREY_WEST: [BoidSpriteCell; 14] = [
+const PREY_WEST: [BoidSpriteCell; 12] = [
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(8, 0, TAIL, BOID_LOWER_HALF),
     sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
@@ -474,8 +472,6 @@ const PREY_WEST: [BoidSpriteCell; 14] = [
     sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(8, 1, TAIL, BOID_BLOCK),
     sprite_cell(9, 1, TAIL, BOID_UPPER_HALF),
-    sprite_cell(4, 2, FIN, BOID_UPPER_HALF),
-    sprite_cell(8, 2, TAIL, BOID_UPPER_HALF),
 ];
 const PREY_NORTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, HEAD, BOID_TOP_LEFT),
@@ -1143,7 +1139,7 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec![".t...f....", "ttbbbfbbbh", ".t...f...."]);
+        assert_eq!(prey_east, vec![".t...f....", "ttbbbfbbbh"]);
         let prey_east_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
@@ -1168,11 +1164,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             prey_east_fin_cells,
-            vec![
-                (5, 0, BOID_LOWER_HALF),
-                (5, 1, BOID_BLOCK),
-                (5, 2, BOID_UPPER_HALF)
-            ]
+            vec![(5, 0, BOID_LOWER_HALF), (5, 1, BOID_BLOCK)]
         );
         let prey_east_tail_cells = prey_east_cells
             .iter()
@@ -1184,8 +1176,7 @@ mod tests {
             vec![
                 (1, 0, BOID_LOWER_HALF),
                 (0, 1, BOID_UPPER_HALF),
-                (1, 1, BOID_BLOCK),
-                (1, 2, BOID_UPPER_HALF)
+                (1, 1, BOID_BLOCK)
             ]
         );
         let prey_west_cells = boid_sprite_cells(
@@ -1212,11 +1203,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             prey_west_fin_cells,
-            vec![
-                (4, 0, BOID_LOWER_HALF),
-                (4, 1, BOID_BLOCK),
-                (4, 2, BOID_UPPER_HALF)
-            ]
+            vec![(4, 0, BOID_LOWER_HALF), (4, 1, BOID_BLOCK)]
         );
         let prey_west_tail_cells = prey_west_cells
             .iter()
@@ -1228,8 +1215,7 @@ mod tests {
             vec![
                 (8, 0, BOID_LOWER_HALF),
                 (8, 1, BOID_BLOCK),
-                (9, 1, BOID_UPPER_HALF),
-                (8, 2, BOID_UPPER_HALF)
+                (9, 1, BOID_UPPER_HALF)
             ]
         );
         assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
