@@ -418,8 +418,8 @@ const PREY_EAST: [BoidSpriteCell; 16] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
     sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(3, 0, BODY, BOID_BLOCK),
-    sprite_cell(4, 0, BODY, BOID_LOWER_HALF),
+    sprite_cell(3, 0, BODY, BOID_LOWER_HALF),
+    sprite_cell(4, 0, BODY, BOID_BLOCK),
     sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(6, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(7, 0, HEAD, BOID_BOTTOM_RIGHT),
@@ -463,8 +463,8 @@ const PREY_WEST: [BoidSpriteCell; 16] = [
     sprite_cell(0, 0, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(3, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(4, 0, BODY, BOID_BLOCK),
+    sprite_cell(3, 0, BODY, BOID_BLOCK),
+    sprite_cell(4, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(6, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(7, 0, TAIL, BOID_BOTTOM_LEFT),
@@ -1151,7 +1151,17 @@ mod tests {
         .filter(|cell| cell.glyph == BOID_BLOCK)
         .map(|cell| (cell.dx, cell.dy))
         .collect::<Vec<_>>();
-        assert_eq!(prey_east_fin_cells, vec![(3, 0), (4, 1)]);
+        assert_eq!(prey_east_fin_cells, vec![(4, 0), (4, 1)]);
+        let prey_west_fin_cells = boid_sprite_cells(
+            GameOfLifeCellStyle::FullBlock,
+            BoidRole::Flock,
+            Vec2::new(-1.0, 0.0),
+        )
+        .iter()
+        .filter(|cell| cell.glyph == BOID_BLOCK)
+        .map(|cell| (cell.dx, cell.dy))
+        .collect::<Vec<_>>();
+        assert_eq!(prey_west_fin_cells, vec![(3, 0), (3, 1)]);
         assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
         assert_eq!(prey_north_west, mirror_columns(&prey_north_east));
         assert_eq!(prey_south_east, mirror_rows(&prey_north_east));
