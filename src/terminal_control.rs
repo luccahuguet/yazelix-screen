@@ -1,7 +1,7 @@
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     execute, queue,
-    style::{Color, Print, SetForegroundColor},
+    style::{Color, Print, SetBackgroundColor, SetForegroundColor},
     terminal::{
         Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
         LeaveAlternateScreen,
@@ -22,6 +22,24 @@ pub(crate) fn styled(text: impl ToString, color: Color) -> String {
             output,
             SetForegroundColor(color),
             Print(text.to_string()),
+            SetForegroundColor(Color::Reset)
+        )?;
+        Ok(())
+    })
+}
+
+pub(crate) fn styled_with_background(
+    text: impl ToString,
+    color: Color,
+    background: Color,
+) -> String {
+    command_string(|output| {
+        queue!(
+            output,
+            SetForegroundColor(color),
+            SetBackgroundColor(background),
+            Print(text.to_string()),
+            SetBackgroundColor(Color::Reset),
             SetForegroundColor(Color::Reset)
         )?;
         Ok(())
