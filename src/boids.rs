@@ -422,7 +422,7 @@ const PREY_EAST: [BoidSpriteCell; 14] = [
     sprite_cell(1, 0, TAIL, BOID_LOWER_HALF),
     sprite_cell(5, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(0, 1, TAIL, BOID_UPPER_HALF),
-    sprite_cell(1, 1, TAIL, BOID_UPPER_HALF),
+    sprite_cell(1, 1, TAIL, BOID_BLOCK),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
@@ -472,7 +472,7 @@ const PREY_WEST: [BoidSpriteCell; 14] = [
     sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(8, 1, TAIL, BOID_UPPER_HALF),
+    sprite_cell(8, 1, TAIL, BOID_BLOCK),
     sprite_cell(9, 1, TAIL, BOID_UPPER_HALF),
     sprite_cell(4, 2, FIN, BOID_UPPER_HALF),
     sprite_cell(8, 2, TAIL, BOID_UPPER_HALF),
@@ -1152,7 +1152,7 @@ mod tests {
         assert!(
             prey_east_cells
                 .iter()
-                .filter(|cell| cell.tone != FIN)
+                .filter(|cell| cell.tone == BODY || cell.tone == HEAD)
                 .all(|cell| cell.glyph != BOID_BLOCK)
         );
         assert!(
@@ -1184,7 +1184,7 @@ mod tests {
             vec![
                 (1, 0, BOID_LOWER_HALF),
                 (0, 1, BOID_UPPER_HALF),
-                (1, 1, BOID_UPPER_HALF),
+                (1, 1, BOID_BLOCK),
                 (1, 2, BOID_UPPER_HALF)
             ]
         );
@@ -1196,7 +1196,7 @@ mod tests {
         assert!(
             prey_west_cells
                 .iter()
-                .filter(|cell| cell.tone != FIN)
+                .filter(|cell| cell.tone == BODY || cell.tone == HEAD)
                 .all(|cell| cell.glyph != BOID_BLOCK)
         );
         assert!(
@@ -1227,7 +1227,7 @@ mod tests {
             prey_west_tail_cells,
             vec![
                 (8, 0, BOID_LOWER_HALF),
-                (8, 1, BOID_UPPER_HALF),
+                (8, 1, BOID_BLOCK),
                 (9, 1, BOID_UPPER_HALF),
                 (8, 2, BOID_UPPER_HALF)
             ]
