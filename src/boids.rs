@@ -418,7 +418,8 @@ const BODY: BoidSpriteTone = BoidSpriteTone::Body;
 const FIN: BoidSpriteTone = BoidSpriteTone::Fin;
 const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidSpriteCell; 10] = [
+const PREY_EAST: [BoidSpriteCell; 11] = [
+    sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(0, 1, TAIL, BOID_TOP_RIGHT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
@@ -457,8 +458,9 @@ const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
 ];
-const PREY_WEST: [BoidSpriteCell; 10] = [
+const PREY_WEST: [BoidSpriteCell; 11] = [
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
+    sprite_cell(8, 0, TAIL, BOID_BOTTOM_LEFT),
     sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
@@ -1135,7 +1137,7 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec!["....f....", "tbbbbbbbh"]);
+        assert_eq!(prey_east, vec!["t...f....", "tbbbbbbbh"]);
         let prey_east_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
