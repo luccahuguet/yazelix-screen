@@ -142,24 +142,24 @@ impl ScreenFrameProducer for BoidsAnimation {
                 }
                 let x = wrapped_index(boid.position.x.round(), grid_width);
                 let y = wrapped_index(boid.position.y.round(), grid_height);
-                let glyphs = boid_glyph_cells(self.cell_style, boid.role, boid.velocity);
+                let sprite = boid_sprite_cells(self.cell_style, boid.role, boid.velocity);
                 let color_x = boid_color_index(index, boid, self.variant);
                 let origin_x = x * 2;
-                for cell in glyphs {
+                for cell in sprite {
                     frame.set(
                         origin_x + cell.dx,
                         y + cell.dy,
                         ScreenCell {
-                            glyph: cell.glyph,
+                            glyph: BOID_BLOCK,
                             color_x,
-                            color_y: 0,
+                            color_y: cell.tone.as_index(),
                         },
                     );
                 }
             }
         }
         frame.render_lines(self.context.resolved_width, |cell| {
-            colorize_boid_cell(cell.color_x, cell.glyph)
+            colorize_boid_cell(cell.color_x, cell.color_y, cell.glyph)
         })
     }
 
@@ -360,62 +360,205 @@ enum BoidDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct BoidGlyphCell {
+enum BoidSpriteTone {
+    Tail,
+    Body,
+    Head,
+}
+
+impl BoidSpriteTone {
+    const fn as_index(self) -> usize {
+        match self {
+            Self::Tail => 0,
+            Self::Body => 1,
+            Self::Head => 2,
+        }
+    }
+
+    fn from_index(index: usize) -> Self {
+        match index {
+            0 => Self::Tail,
+            2 => Self::Head,
+            _ => Self::Body,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BoidSpriteCell {
     dx: usize,
     dy: usize,
-    glyph: char,
+    tone: BoidSpriteTone,
 }
 
-const fn glyph_cell(dx: usize, dy: usize, glyph: char) -> BoidGlyphCell {
-    BoidGlyphCell { dx, dy, glyph }
+const fn sprite_cell(dx: usize, dy: usize, tone: BoidSpriteTone) -> BoidSpriteCell {
+    BoidSpriteCell { dx, dy, tone }
 }
 
-const PREDATOR_HORIZONTAL_BODY: char = '●';
-const PREDATOR_VERTICAL_BODY: char = '⬤';
+const BOID_BLOCK: char = '█';
+const TAIL: BoidSpriteTone = BoidSpriteTone::Tail;
+const BODY: BoidSpriteTone = BoidSpriteTone::Body;
+const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '▶')];
-const PREY_SOUTH_EAST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '▶')];
-const PREY_SOUTH: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '▼')];
-const PREY_SOUTH_WEST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '◀')];
-const PREY_WEST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '◀')];
-const PREY_NORTH_WEST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '◀')];
-const PREY_NORTH: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '▲')];
-const PREY_NORTH_EAST: [BoidGlyphCell; 1] = [glyph_cell(0, 0, '▶')];
+const PREY_EAST: [BoidSpriteCell; 5] = [
+    sprite_cell(0, 0, TAIL),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, HEAD),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, HEAD),
+];
+const PREY_SOUTH_EAST: [BoidSpriteCell; 5] = [
+    sprite_cell(0, 0, TAIL),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, HEAD),
+];
+const PREY_SOUTH: [BoidSpriteCell; 6] = [
+    sprite_cell(0, 0, TAIL),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, TAIL),
+    sprite_cell(0, 1, HEAD),
+    sprite_cell(1, 1, HEAD),
+    sprite_cell(2, 1, HEAD),
+];
+const PREY_SOUTH_WEST: [BoidSpriteCell; 5] = [
+    sprite_cell(0, 0, BODY),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, TAIL),
+    sprite_cell(0, 1, HEAD),
+    sprite_cell(1, 1, BODY),
+];
+const PREY_WEST: [BoidSpriteCell; 5] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, TAIL),
+    sprite_cell(0, 1, HEAD),
+    sprite_cell(1, 1, BODY),
+];
+const PREY_NORTH_WEST: [BoidSpriteCell; 5] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(0, 1, BODY),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, TAIL),
+];
+const PREY_NORTH: [BoidSpriteCell; 6] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, HEAD),
+    sprite_cell(2, 0, HEAD),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, TAIL),
+];
+const PREY_NORTH_EAST: [BoidSpriteCell; 5] = [
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, HEAD),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+];
 
-const PREDATOR_EAST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, PREDATOR_HORIZONTAL_BODY),
-    glyph_cell(1, 0, '▶'),
+const PREDATOR_EAST: [BoidSpriteCell; 11] = [
+    sprite_cell(0, 0, TAIL),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(3, 0, HEAD),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, HEAD),
+    sprite_cell(0, 2, TAIL),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
+    sprite_cell(3, 2, HEAD),
 ];
-const PREDATOR_SOUTH_EAST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, PREDATOR_HORIZONTAL_BODY),
-    glyph_cell(1, 0, '▶'),
+const PREDATOR_SOUTH_EAST: [BoidSpriteCell; 10] = [
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, BODY),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
+    sprite_cell(3, 2, HEAD),
+    sprite_cell(0, 2, TAIL),
 ];
-const PREDATOR_SOUTH: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, PREDATOR_VERTICAL_BODY),
-    glyph_cell(0, 1, '▼'),
+const PREDATOR_SOUTH: [BoidSpriteCell; 10] = [
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, TAIL),
+    sprite_cell(0, 2, HEAD),
+    sprite_cell(1, 2, HEAD),
+    sprite_cell(2, 2, HEAD),
+    sprite_cell(3, 2, HEAD),
 ];
-const PREDATOR_SOUTH_WEST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, '◀'),
-    glyph_cell(1, 0, PREDATOR_HORIZONTAL_BODY),
+const PREDATOR_SOUTH_WEST: [BoidSpriteCell; 10] = [
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(0, 1, BODY),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, TAIL),
+    sprite_cell(0, 2, HEAD),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
+    sprite_cell(3, 2, TAIL),
 ];
-const PREDATOR_WEST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, '◀'),
-    glyph_cell(1, 0, PREDATOR_HORIZONTAL_BODY),
+const PREDATOR_WEST: [BoidSpriteCell; 11] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(3, 0, TAIL),
+    sprite_cell(0, 1, HEAD),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(0, 2, HEAD),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
+    sprite_cell(3, 2, TAIL),
 ];
-const PREDATOR_NORTH_WEST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, '◀'),
-    glyph_cell(1, 0, PREDATOR_HORIZONTAL_BODY),
+const PREDATOR_NORTH_WEST: [BoidSpriteCell; 10] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(3, 0, TAIL),
+    sprite_cell(0, 1, BODY),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, TAIL),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
 ];
-const PREDATOR_NORTH: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, '▲'),
-    glyph_cell(0, 1, PREDATOR_VERTICAL_BODY),
+const PREDATOR_NORTH: [BoidSpriteCell; 10] = [
+    sprite_cell(0, 0, HEAD),
+    sprite_cell(1, 0, HEAD),
+    sprite_cell(2, 0, HEAD),
+    sprite_cell(3, 0, HEAD),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, TAIL),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
 ];
-const PREDATOR_NORTH_EAST: [BoidGlyphCell; 2] = [
-    glyph_cell(0, 0, PREDATOR_HORIZONTAL_BODY),
-    glyph_cell(1, 0, '▶'),
+const PREDATOR_NORTH_EAST: [BoidSpriteCell; 10] = [
+    sprite_cell(1, 0, BODY),
+    sprite_cell(2, 0, BODY),
+    sprite_cell(3, 0, HEAD),
+    sprite_cell(0, 1, TAIL),
+    sprite_cell(1, 1, BODY),
+    sprite_cell(2, 1, BODY),
+    sprite_cell(3, 1, BODY),
+    sprite_cell(1, 2, BODY),
+    sprite_cell(2, 2, BODY),
+    sprite_cell(0, 2, TAIL),
 ];
 
-fn prey_glyph_cells(direction: BoidDirection) -> &'static [BoidGlyphCell] {
+fn prey_sprite_cells(direction: BoidDirection) -> &'static [BoidSpriteCell] {
     match direction {
         BoidDirection::East => &PREY_EAST,
         BoidDirection::SouthEast => &PREY_SOUTH_EAST,
@@ -428,7 +571,7 @@ fn prey_glyph_cells(direction: BoidDirection) -> &'static [BoidGlyphCell] {
     }
 }
 
-fn predator_glyph_cells(direction: BoidDirection) -> &'static [BoidGlyphCell] {
+fn predator_sprite_cells(direction: BoidDirection) -> &'static [BoidSpriteCell] {
     match direction {
         BoidDirection::East => &PREDATOR_EAST,
         BoidDirection::SouthEast => &PREDATOR_SOUTH_EAST,
@@ -459,20 +602,20 @@ fn boid_direction(velocity: Vec2) -> BoidDirection {
     }
 }
 
-fn boid_glyph_cells(
+fn boid_sprite_cells(
     _cell_style: GameOfLifeCellStyle,
     role: BoidRole,
     velocity: Vec2,
-) -> &'static [BoidGlyphCell] {
+) -> &'static [BoidSpriteCell] {
     let direction = boid_direction(velocity);
     match role {
-        BoidRole::Flock => prey_glyph_cells(direction),
-        BoidRole::Predator => predator_glyph_cells(direction),
+        BoidRole::Flock => prey_sprite_cells(direction),
+        BoidRole::Predator => predator_sprite_cells(direction),
     }
 }
 
-fn colorize_boid_cell(index: usize, glyph: char) -> String {
-    let palette = [
+fn colorize_boid_cell(index: usize, tone_index: usize, glyph: char) -> String {
+    let body_palette = [
         Color::Red,
         Color::Cyan,
         Color::Blue,
@@ -480,7 +623,29 @@ fn colorize_boid_cell(index: usize, glyph: char) -> String {
         Color::Green,
         Color::Yellow,
     ];
-    crate::terminal_control::styled(glyph, palette[index % palette.len()])
+    let tail_palette = [
+        Color::DarkRed,
+        Color::DarkCyan,
+        Color::DarkBlue,
+        Color::DarkMagenta,
+        Color::DarkGreen,
+        Color::DarkYellow,
+    ];
+    let head_palette = [
+        Color::Yellow,
+        Color::White,
+        Color::Cyan,
+        Color::White,
+        Color::Yellow,
+        Color::White,
+    ];
+    let palette_index = index % body_palette.len();
+    let color = match BoidSpriteTone::from_index(tone_index) {
+        BoidSpriteTone::Tail => tail_palette[palette_index],
+        BoidSpriteTone::Body => body_palette[palette_index],
+        BoidSpriteTone::Head => head_palette[palette_index],
+    };
+    crate::terminal_control::styled(glyph, color)
 }
 
 #[cfg(test)]
@@ -516,11 +681,60 @@ mod tests {
         visible
     }
 
-    fn glyph_text(role: BoidRole, velocity: Vec2) -> String {
-        boid_glyph_cells(GameOfLifeCellStyle::FullBlock, role, velocity)
-            .iter()
-            .map(|cell| cell.glyph)
+    fn tone_char(tone: BoidSpriteTone) -> char {
+        match tone {
+            BoidSpriteTone::Tail => 't',
+            BoidSpriteTone::Body => 'b',
+            BoidSpriteTone::Head => 'h',
+        }
+    }
+
+    fn sprite_extent(cells: &[BoidSpriteCell]) -> (usize, usize) {
+        let width = cells.iter().map(|cell| cell.dx).max().unwrap_or(0) + 1;
+        let height = cells.iter().map(|cell| cell.dy).max().unwrap_or(0) + 1;
+        (width, height)
+    }
+
+    fn sprite_signature_for_cells(cells: &[BoidSpriteCell]) -> Vec<String> {
+        let (width, height) = sprite_extent(cells);
+        let mut rows = vec![vec!['.'; width]; height];
+        for cell in cells {
+            rows[cell.dy][cell.dx] = tone_char(cell.tone);
+        }
+        rows.into_iter()
+            .map(|row| row.into_iter().collect())
             .collect()
+    }
+
+    fn sprite_signature(role: BoidRole, velocity: Vec2) -> Vec<String> {
+        sprite_signature_for_cells(boid_sprite_cells(
+            GameOfLifeCellStyle::FullBlock,
+            role,
+            velocity,
+        ))
+    }
+
+    fn assert_painted_boid_frame(visible: &[String], width: usize, height: usize) {
+        assert_eq!(visible.len(), height);
+        assert!(visible.iter().all(|line| line.chars().count() == width));
+        let forbidden = [
+            "→", "←", "↑", "↓", "▶", "◀", "▲", "▼", "⠐", "⠶", "⠈", "⢆", "◤", "◥", "◢", "◣", "●",
+            "⬤", "/", "\\", "<", ">", "^", "v",
+        ];
+        assert!(
+            visible
+                .iter()
+                .all(|line| { !forbidden.into_iter().any(|glyph| line.contains(glyph)) })
+        );
+
+        let mut painted_cells = 0;
+        for line in visible {
+            for cell in line.chars().filter(|cell| *cell != ' ') {
+                painted_cells += 1;
+                assert_eq!(cell, BOID_BLOCK);
+            }
+        }
+        assert!(painted_cells > 0);
     }
 
     // Defends: public boids style names include the legacy alias and retained behavior-backed variants, with flow removed from the live surface.
@@ -634,10 +848,10 @@ mod tests {
         );
     }
 
-    // Regression: boids must render as cardinal filled directional triangles, not braille blobs, diagonal corner blocks, or plain cells with skipped rows.
+    // Regression: boids render as painted block-cell sprites, not font-sensitive symbolic glyphs, braille blobs, or corner triangles.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
-    fn boids_render_scaled_cells_without_inserted_rows() {
+    fn boids_render_painted_cells_without_inserted_rows() {
         let animation = BoidsAnimation::new(context(80, 24), GameOfLifeCellStyle::FullBlock);
         let visible = animation
             .render_frame()
@@ -645,18 +859,7 @@ mod tests {
             .map(|line| strip_ansi_codes(&line))
             .collect::<Vec<_>>();
 
-        assert_eq!(visible.len(), 24);
-        assert!(visible.iter().all(|line| line.chars().count() == 80));
-        assert!(visible.iter().all(|line| {
-            !["→", "←", "↑", "↓", "⠐", "⠶", "⠈", "⢆", "◤", "◥", "◢", "◣"]
-                .into_iter()
-                .any(|glyph| line.contains(glyph))
-        }));
-        assert!(visible.iter().any(|line| {
-            ["▶", "◀", "▲", "▼"]
-                .into_iter()
-                .any(|signature| line.contains(signature))
-        }));
+        assert_painted_boid_frame(&visible, 80, 24);
     }
 
     // Defends: boids resize through the same frame-producer contract future animations will use.
@@ -671,62 +874,94 @@ mod tests {
             .map(|line| strip_ansi_codes(&line))
             .collect::<Vec<_>>();
 
-        assert_eq!(visible.len(), 12);
-        assert!(visible.iter().all(|line| line.chars().count() == 60));
-        assert!(visible.iter().all(|line| {
-            !["→", "←", "↑", "↓", "⠐", "⠶", "⠈", "⢆", "◤", "◥", "◢", "◣"]
-                .into_iter()
-                .any(|glyph| line.contains(glyph))
-        }));
-        assert!(visible.iter().any(|line| {
-            ["▶", "◀", "▲", "▼"]
-                .into_iter()
-                .any(|signature| line.contains(signature))
-        }));
+        assert_painted_boid_frame(&visible, 60, 12);
     }
 
-    // Regression: boid units must not collapse into identical pulsing blocks; diagonal movement collapses to readable cardinal sprites.
+    // Regression: boid units must not collapse into identical pulsing blocks; diagonal movement gets real painted silhouettes.
     // Strength: defect=2 behavior=2 resilience=2 cost=1 uniqueness=2 total=9/10
     #[test]
     fn boid_visual_identity_is_stable_and_directional() {
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(1.0, 0.1)), "▶");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(1.0, 1.0)), "▶");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(0.1, 1.0)), "▼");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(-1.0, 1.0)), "◀");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(-1.0, 0.1)), "◀");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(-1.0, -1.0)), "◀");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(0.1, -1.0)), "▲");
-        assert_eq!(glyph_text(BoidRole::Flock, Vec2::new(1.0, -1.0)), "▶");
-        assert_eq!(colorize_boid_cell(3, '▶'), colorize_boid_cell(3, '▶'));
-        assert_ne!(colorize_boid_cell(0, '▶'), colorize_boid_cell(1, '▶'));
+        let directions = [
+            Vec2::new(1.0, 0.0),
+            Vec2::new(1.0, 1.0),
+            Vec2::new(0.0, 1.0),
+            Vec2::new(-1.0, 1.0),
+            Vec2::new(-1.0, 0.0),
+            Vec2::new(-1.0, -1.0),
+            Vec2::new(0.0, -1.0),
+            Vec2::new(1.0, -1.0),
+        ];
+        let prey_signatures = directions
+            .into_iter()
+            .map(|velocity| sprite_signature(BoidRole::Flock, velocity).join("\n"))
+            .collect::<std::collections::BTreeSet<_>>();
+        let predator_signatures = directions
+            .into_iter()
+            .map(|velocity| sprite_signature(BoidRole::Predator, velocity).join("\n"))
+            .collect::<std::collections::BTreeSet<_>>();
+
+        assert_eq!(prey_signatures.len(), 8);
+        assert_eq!(predator_signatures.len(), 8);
+        assert_eq!(
+            sprite_signature(BoidRole::Flock, Vec2::new(1.0, 0.0)),
+            vec!["tbh", ".bh"]
+        );
+        assert_eq!(
+            sprite_signature(BoidRole::Flock, Vec2::new(1.0, -1.0)),
+            vec![".bh", "tbb"]
+        );
+        assert_eq!(
+            sprite_signature(BoidRole::Flock, Vec2::new(-1.0, -1.0)),
+            vec!["hb.", "bbt"]
+        );
+        assert_eq!(
+            colorize_boid_cell(3, BODY.as_index(), BOID_BLOCK),
+            colorize_boid_cell(3, BODY.as_index(), BOID_BLOCK)
+        );
+        assert_ne!(
+            colorize_boid_cell(0, BODY.as_index(), BOID_BLOCK),
+            colorize_boid_cell(1, BODY.as_index(), BOID_BLOCK)
+        );
+        assert_ne!(
+            colorize_boid_cell(1, TAIL.as_index(), BOID_BLOCK),
+            colorize_boid_cell(1, HEAD.as_index(), BOID_BLOCK)
+        );
     }
 
-    // Defends: predator sprites use small horizontal bodies and larger vertical bodies while preserving cardinal pointing.
+    // Defends: predators remain larger than prey while using the same terminal-safe painted-cell language.
     // Strength: defect=2 behavior=2 resilience=1 cost=1 uniqueness=2 total=8/10
     #[test]
     fn predator_sprite_is_larger_than_prey_sprite() {
-        let prey = boid_glyph_cells(
+        let prey = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
             Vec2::new(1.0, -1.0),
         );
-        let predator = boid_glyph_cells(
+        let predator = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Predator,
             Vec2::new(1.0, -1.0),
         );
+        let (prey_width, prey_height) = sprite_extent(prey);
+        let (predator_width, predator_height) = sprite_extent(predator);
 
         assert!(predator.len() > prey.len());
+        assert!(predator_width > prey_width);
+        assert!(predator_height > prey_height);
+        assert!(
+            prey.iter()
+                .all(|cell| matches!(cell.tone, TAIL | BODY | HEAD))
+        );
         assert!(
             predator
                 .iter()
-                .any(|cell| cell.glyph == PREDATOR_HORIZONTAL_BODY)
+                .all(|cell| matches!(cell.tone, TAIL | BODY | HEAD))
         );
-        assert_eq!(glyph_text(BoidRole::Predator, Vec2::new(1.0, -1.0)), "●▶");
-        assert_eq!(glyph_text(BoidRole::Predator, Vec2::new(-1.0, 0.1)), "◀●");
-        assert_eq!(glyph_text(BoidRole::Predator, Vec2::new(0.1, -1.0)), "▲⬤");
-        assert_eq!(glyph_text(BoidRole::Predator, Vec2::new(0.1, 1.0)), "⬤▼");
-        assert_ne!(PREDATOR_HORIZONTAL_BODY, PREDATOR_VERTICAL_BODY);
+        assert_eq!(sprite_signature_for_cells(prey), vec![".bh", "tbb"]);
+        assert_eq!(
+            sprite_signature_for_cells(predator),
+            vec![".bbh", "tbbb", "tbb."]
+        );
     }
 
     // Defends: the faster boids tuning moves creatures far enough per frame to read as intentional animation.
