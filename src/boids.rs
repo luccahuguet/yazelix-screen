@@ -414,13 +414,15 @@ const TAIL: BoidSpriteTone = BoidSpriteTone::Tail;
 const BODY: BoidSpriteTone = BoidSpriteTone::Body;
 const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidSpriteCell; 13] = [
+const PREY_EAST: [BoidSpriteCell; 15] = [
+    sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
     sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(3, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(4, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(6, 0, HEAD, BOID_BOTTOM_RIGHT),
-    sprite_cell(0, 1, TAIL, BOID_RIGHT_HALF),
+    sprite_cell(6, 0, BODY, BOID_LOWER_HALF),
+    sprite_cell(7, 0, HEAD, BOID_BOTTOM_RIGHT),
+    sprite_cell(0, 1, TAIL, BOID_TOP_RIGHT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
@@ -456,12 +458,14 @@ const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
 ];
-const PREY_WEST: [BoidSpriteCell; 13] = [
-    sprite_cell(1, 0, HEAD, BOID_BOTTOM_LEFT),
+const PREY_WEST: [BoidSpriteCell; 15] = [
+    sprite_cell(0, 0, HEAD, BOID_BOTTOM_LEFT),
+    sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(3, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(4, 0, BODY, BOID_LOWER_HALF),
     sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
+    sprite_cell(7, 0, TAIL, BOID_BOTTOM_LEFT),
     sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
@@ -469,7 +473,7 @@ const PREY_WEST: [BoidSpriteCell; 13] = [
     sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(7, 1, TAIL, BOID_LEFT_HALF),
+    sprite_cell(7, 1, TAIL, BOID_TOP_LEFT),
 ];
 const PREY_NORTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, HEAD, BOID_TOP_LEFT),
@@ -511,7 +515,7 @@ const PREDATOR_EAST: [BoidSpriteCell; 32] = [
     sprite_cell(11, 0, HEAD, BOID_BOTTOM_RIGHT),
     sprite_cell(0, 1, TAIL, BOID_RIGHT_HALF),
     sprite_cell(1, 1, TAIL, BOID_BLOCK),
-    sprite_cell(2, 1, TAIL, BOID_LOWER_HALF),
+    sprite_cell(2, 1, TAIL, BOID_RIGHT_HALF),
     sprite_cell(3, 1, BODY, BOID_BLOCK),
     sprite_cell(4, 1, BODY, BOID_BLOCK),
     sprite_cell(5, 1, BODY, BOID_BLOCK),
@@ -603,7 +607,7 @@ const PREDATOR_WEST: [BoidSpriteCell; 32] = [
     sprite_cell(8, 1, BODY, BOID_BLOCK),
     sprite_cell(9, 1, BODY, BOID_BLOCK),
     sprite_cell(10, 1, BODY, BOID_BLOCK),
-    sprite_cell(11, 1, TAIL, BOID_LOWER_HALF),
+    sprite_cell(11, 1, TAIL, BOID_LEFT_HALF),
     sprite_cell(12, 1, TAIL, BOID_BLOCK),
     sprite_cell(13, 1, TAIL, BOID_LEFT_HALF),
     sprite_cell(2, 2, HEAD, BOID_TOP_LEFT),
@@ -803,8 +807,35 @@ mod tests {
         (width, height)
     }
 
-    fn occupied_rows_in_column(cells: &[BoidSpriteCell], column: usize) -> usize {
-        cells.iter().filter(|cell| cell.dx == column).count()
+    fn column_has_no_full_blocks(cells: &[BoidSpriteCell], column: usize) -> bool {
+        cells
+            .iter()
+            .filter(|cell| cell.dx == column)
+            .all(|cell| cell.glyph != BOID_BLOCK)
+    }
+
+    fn tone_glyphs_in_row(
+        cells: &[BoidSpriteCell],
+        row: usize,
+        tone: BoidSpriteTone,
+    ) -> Vec<(usize, char)> {
+        let mut row_cells = cells
+            .iter()
+            .filter(|cell| cell.dy == row && cell.tone == tone)
+            .map(|cell| (cell.dx, cell.glyph))
+            .collect::<Vec<_>>();
+        row_cells.sort_by_key(|(dx, _)| *dx);
+        row_cells
+    }
+
+    fn assert_tone_rows_mirror(cells: &[BoidSpriteCell], tone: BoidSpriteTone) {
+        let (_, height) = sprite_extent(cells);
+        let top = tone_glyphs_in_row(cells, 0, tone)
+            .into_iter()
+            .map(|(dx, glyph)| (dx, mirror_glyph_row(glyph)))
+            .collect::<Vec<_>>();
+        let bottom = tone_glyphs_in_row(cells, height - 1, tone);
+        assert_eq!(top, bottom);
     }
 
     fn sprite_signature_for_cells(cells: &[BoidSpriteCell]) -> Vec<String> {
@@ -1108,7 +1139,7 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec!["..bbbbh.", "tbbbbbbh"]);
+        assert_eq!(prey_east, vec!["t.bbbbbh", "tbbbbbbh"]);
         assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
         assert_eq!(prey_north_west, mirror_columns(&prey_north_east));
         assert_eq!(prey_south_east, mirror_rows(&prey_north_east));
@@ -1171,20 +1202,14 @@ mod tests {
 
             assert!(east_width >= east_height * 3);
             assert!(west_width >= west_height * 3);
-            match role {
-                BoidRole::Flock => {
-                    assert!(occupied_rows_in_column(east, 0) < east_height);
-                    assert!(occupied_rows_in_column(east, east_width - 1) < east_height);
-                    assert!(occupied_rows_in_column(west, 0) < west_height);
-                    assert!(occupied_rows_in_column(west, west_width - 1) < west_height);
-                }
-                BoidRole::Predator => {
-                    assert_eq!(occupied_rows_in_column(east, 0), east_height);
-                    assert!(occupied_rows_in_column(east, east_width - 1) < east_height);
-                    assert!(occupied_rows_in_column(west, 0) < west_height);
-                    assert_eq!(occupied_rows_in_column(west, west_width - 1), west_height);
-                }
-            }
+            assert!(column_has_no_full_blocks(east, 0));
+            assert!(column_has_no_full_blocks(east, east_width - 1));
+            assert!(column_has_no_full_blocks(west, 0));
+            assert!(column_has_no_full_blocks(west, west_width - 1));
+            assert_tone_rows_mirror(east, TAIL);
+            assert_tone_rows_mirror(east, HEAD);
+            assert_tone_rows_mirror(west, TAIL);
+            assert_tone_rows_mirror(west, HEAD);
         }
         assert!(predator_east[0].len() >= prey_east[0].len() + 6);
         assert_eq!(
