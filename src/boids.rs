@@ -426,7 +426,7 @@ const PREY_EAST: [BoidSpriteCell; 11] = [
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(4, 1, FIN, BOID_RIGHT_HALF),
-    sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(5, 1, FIN, BOID_LEFT_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(8, 1, HEAD, BOID_TOP_RIGHT),
@@ -464,7 +464,7 @@ const PREY_WEST: [BoidSpriteCell; 11] = [
     sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(3, 1, FIN, BOID_RIGHT_HALF),
     sprite_cell(4, 1, FIN, BOID_LEFT_HALF),
     sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
@@ -1137,7 +1137,7 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec!["t...f....", "tbbbfbbbh"]);
+        assert_eq!(prey_east, vec!["t...f....", "tbbbffbbh"]);
         let prey_east_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
@@ -1157,7 +1157,11 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             prey_east_fin_cells,
-            vec![(4, 0, BOID_LOWER_HALF), (4, 1, BOID_RIGHT_HALF)]
+            vec![
+                (4, 0, BOID_LOWER_HALF),
+                (4, 1, BOID_RIGHT_HALF),
+                (5, 1, BOID_LEFT_HALF)
+            ]
         );
         let prey_east_tail_cells = prey_east_cells
             .iter()
@@ -1187,7 +1191,11 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             prey_west_fin_cells,
-            vec![(4, 0, BOID_LOWER_HALF), (4, 1, BOID_LEFT_HALF)]
+            vec![
+                (4, 0, BOID_LOWER_HALF),
+                (3, 1, BOID_RIGHT_HALF),
+                (4, 1, BOID_LEFT_HALF)
+            ]
         );
         let prey_west_tail_cells = prey_west_cells
             .iter()
