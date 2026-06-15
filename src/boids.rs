@@ -418,19 +418,17 @@ const BODY: BoidSpriteTone = BoidSpriteTone::Body;
 const FIN: BoidSpriteTone = BoidSpriteTone::Fin;
 const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidSpriteCell; 12] = [
+const PREY_EAST: [BoidSpriteCell; 10] = [
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(0, 1, TAIL, BOID_TOP_RIGHT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(5, 1, BODY, BOID_LOWER_HALF),
-    sprite_cell(6, 1, BODY, BOID_LOWER_HALF),
-    sprite_cell(7, 1, BODY, BOID_LOWER_HALF),
-    sprite_cell(8, 1, HEAD, BOID_BOTTOM_RIGHT),
-    sprite_cell(5, 2, FIN, BOID_UPPER_HALF),
-    sprite_cell(6, 2, FIN, BOID_UPPER_HALF),
+    sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(8, 1, HEAD, BOID_TOP_RIGHT),
 ];
 const PREY_SOUTH_EAST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
@@ -459,19 +457,17 @@ const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
 ];
-const PREY_WEST: [BoidSpriteCell; 12] = [
+const PREY_WEST: [BoidSpriteCell; 10] = [
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
-    sprite_cell(0, 1, HEAD, BOID_BOTTOM_LEFT),
-    sprite_cell(1, 1, BODY, BOID_LOWER_HALF),
-    sprite_cell(2, 1, BODY, BOID_LOWER_HALF),
-    sprite_cell(3, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
+    sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(8, 1, TAIL, BOID_TOP_LEFT),
-    sprite_cell(2, 2, FIN, BOID_UPPER_HALF),
-    sprite_cell(3, 2, FIN, BOID_UPPER_HALF),
 ];
 const PREY_NORTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, HEAD, BOID_TOP_LEFT),
@@ -1139,7 +1135,7 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec!["....f....", "tbbbbbbbh", ".....ff.."]);
+        assert_eq!(prey_east, vec!["....f....", "tbbbbbbbh"]);
         let prey_east_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
@@ -1157,14 +1153,7 @@ mod tests {
             .filter(|cell| cell.tone == FIN)
             .map(|cell| (cell.dx, cell.dy, cell.glyph))
             .collect::<Vec<_>>();
-        assert_eq!(
-            prey_east_fin_cells,
-            vec![
-                (4, 0, BOID_LOWER_HALF),
-                (5, 2, BOID_UPPER_HALF),
-                (6, 2, BOID_UPPER_HALF)
-            ]
-        );
+        assert_eq!(prey_east_fin_cells, vec![(4, 0, BOID_LOWER_HALF)]);
         let prey_west_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
@@ -1182,14 +1171,7 @@ mod tests {
             .filter(|cell| cell.tone == FIN)
             .map(|cell| (cell.dx, cell.dy, cell.glyph))
             .collect::<Vec<_>>();
-        assert_eq!(
-            prey_west_fin_cells,
-            vec![
-                (4, 0, BOID_LOWER_HALF),
-                (2, 2, BOID_UPPER_HALF),
-                (3, 2, BOID_UPPER_HALF)
-            ]
-        );
+        assert_eq!(prey_west_fin_cells, vec![(4, 0, BOID_LOWER_HALF)]);
         assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
         assert_eq!(prey_north_west, mirror_columns(&prey_north_east));
         assert_eq!(prey_south_east, mirror_rows(&prey_north_east));
@@ -1256,10 +1238,12 @@ mod tests {
             assert!(column_has_no_full_blocks(east, east_width - 1));
             assert!(column_has_no_full_blocks(west, 0));
             assert!(column_has_no_full_blocks(west, west_width - 1));
-            assert_tone_rows_mirror(east, TAIL);
-            assert_tone_rows_mirror(east, HEAD);
-            assert_tone_rows_mirror(west, TAIL);
-            assert_tone_rows_mirror(west, HEAD);
+            if role == BoidRole::Predator {
+                assert_tone_rows_mirror(east, TAIL);
+                assert_tone_rows_mirror(east, HEAD);
+                assert_tone_rows_mirror(west, TAIL);
+                assert_tone_rows_mirror(west, HEAD);
+            }
         }
         assert!(predator_east[0].len() >= prey_east[0].len() + 4);
         assert_eq!(
