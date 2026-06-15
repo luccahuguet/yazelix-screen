@@ -432,32 +432,36 @@ const PREY_EAST: [BoidSpriteCell; 12] = [
     sprite_cell(8, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(9, 1, HEAD, BOID_TOP_RIGHT),
 ];
-const PREY_SOUTH_EAST: [BoidSpriteCell; 7] = [
+const PREY_SOUTH_EAST: [BoidSpriteCell; 8] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
     sprite_cell(1, 0, TAIL, BOID_BOTTOM_LEFT),
     sprite_cell(0, 1, TAIL, BOID_RIGHT_HALF),
-    sprite_cell(1, 1, BODY, BOID_BLOCK),
-    sprite_cell(2, 1, BODY, BOID_LEFT_HALF),
-    sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
-    sprite_cell(2, 2, HEAD, BOID_BOTTOM_RIGHT),
+    sprite_cell(1, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(1, 2, FIN, BOID_BLOCK),
+    sprite_cell(2, 2, BODY, BOID_LEFT_HALF),
+    sprite_cell(2, 3, BODY, BOID_UPPER_HALF),
+    sprite_cell(3, 3, HEAD, BOID_BOTTOM_RIGHT),
 ];
-const PREY_SOUTH: [BoidSpriteCell; 7] = [
+const PREY_SOUTH: [BoidSpriteCell; 9] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
-    sprite_cell(1, 0, TAIL, BOID_UPPER_HALF),
+    sprite_cell(1, 0, TAIL, BOID_LOWER_HALF),
     sprite_cell(2, 0, TAIL, BOID_BOTTOM_LEFT),
-    sprite_cell(0, 1, BODY, BOID_RIGHT_HALF),
-    sprite_cell(1, 1, BODY, BOID_BLOCK),
-    sprite_cell(2, 1, BODY, BOID_LEFT_HALF),
-    sprite_cell(1, 2, HEAD, BOID_LOWER_HALF),
+    sprite_cell(1, 1, TAIL, BOID_BLOCK),
+    sprite_cell(0, 2, FIN, BOID_RIGHT_HALF),
+    sprite_cell(1, 2, FIN, BOID_BLOCK),
+    sprite_cell(2, 2, FIN, BOID_LEFT_HALF),
+    sprite_cell(1, 3, BODY, BOID_BLOCK),
+    sprite_cell(1, 4, HEAD, BOID_LOWER_HALF),
 ];
-const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
-    sprite_cell(1, 0, TAIL, BOID_BOTTOM_RIGHT),
-    sprite_cell(2, 0, TAIL, BOID_BOTTOM_LEFT),
-    sprite_cell(0, 1, BODY, BOID_RIGHT_HALF),
-    sprite_cell(1, 1, BODY, BOID_BLOCK),
-    sprite_cell(2, 1, TAIL, BOID_LEFT_HALF),
-    sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
-    sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
+const PREY_SOUTH_WEST: [BoidSpriteCell; 8] = [
+    sprite_cell(2, 0, TAIL, BOID_BOTTOM_RIGHT),
+    sprite_cell(3, 0, TAIL, BOID_BOTTOM_LEFT),
+    sprite_cell(3, 1, TAIL, BOID_LEFT_HALF),
+    sprite_cell(2, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(1, 2, BODY, BOID_RIGHT_HALF),
+    sprite_cell(2, 2, FIN, BOID_BLOCK),
+    sprite_cell(0, 3, HEAD, BOID_BOTTOM_LEFT),
+    sprite_cell(1, 3, BODY, BOID_UPPER_HALF),
 ];
 const PREY_WEST: [BoidSpriteCell; 12] = [
     sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
@@ -473,32 +477,36 @@ const PREY_WEST: [BoidSpriteCell; 12] = [
     sprite_cell(8, 1, TAIL, BOID_BLOCK),
     sprite_cell(9, 1, TAIL, BOID_UPPER_HALF),
 ];
-const PREY_NORTH_WEST: [BoidSpriteCell; 7] = [
+const PREY_NORTH_WEST: [BoidSpriteCell; 8] = [
     sprite_cell(0, 0, HEAD, BOID_TOP_LEFT),
     sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(0, 1, BODY, BOID_RIGHT_HALF),
-    sprite_cell(1, 1, BODY, BOID_BLOCK),
-    sprite_cell(2, 1, TAIL, BOID_LEFT_HALF),
-    sprite_cell(1, 2, TAIL, BOID_TOP_RIGHT),
-    sprite_cell(2, 2, TAIL, BOID_TOP_LEFT),
+    sprite_cell(1, 1, BODY, BOID_RIGHT_HALF),
+    sprite_cell(2, 1, FIN, BOID_BLOCK),
+    sprite_cell(2, 2, BODY, BOID_UPPER_HALF),
+    sprite_cell(3, 2, TAIL, BOID_LEFT_HALF),
+    sprite_cell(2, 3, TAIL, BOID_TOP_RIGHT),
+    sprite_cell(3, 3, TAIL, BOID_TOP_LEFT),
 ];
-const PREY_NORTH: [BoidSpriteCell; 7] = [
+const PREY_NORTH: [BoidSpriteCell; 9] = [
     sprite_cell(1, 0, HEAD, BOID_UPPER_HALF),
-    sprite_cell(0, 1, BODY, BOID_RIGHT_HALF),
     sprite_cell(1, 1, BODY, BOID_BLOCK),
-    sprite_cell(2, 1, BODY, BOID_LEFT_HALF),
-    sprite_cell(0, 2, TAIL, BOID_TOP_RIGHT),
-    sprite_cell(1, 2, TAIL, BOID_LOWER_HALF),
-    sprite_cell(2, 2, TAIL, BOID_TOP_LEFT),
+    sprite_cell(0, 2, FIN, BOID_RIGHT_HALF),
+    sprite_cell(1, 2, FIN, BOID_BLOCK),
+    sprite_cell(2, 2, FIN, BOID_LEFT_HALF),
+    sprite_cell(1, 3, TAIL, BOID_BLOCK),
+    sprite_cell(0, 4, TAIL, BOID_TOP_RIGHT),
+    sprite_cell(1, 4, TAIL, BOID_UPPER_HALF),
+    sprite_cell(2, 4, TAIL, BOID_TOP_LEFT),
 ];
-const PREY_NORTH_EAST: [BoidSpriteCell; 7] = [
-    sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(2, 0, HEAD, BOID_TOP_RIGHT),
-    sprite_cell(0, 1, TAIL, BOID_RIGHT_HALF),
-    sprite_cell(1, 1, BODY, BOID_BLOCK),
+const PREY_NORTH_EAST: [BoidSpriteCell; 8] = [
+    sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
+    sprite_cell(3, 0, HEAD, BOID_TOP_RIGHT),
+    sprite_cell(1, 1, FIN, BOID_BLOCK),
     sprite_cell(2, 1, BODY, BOID_LEFT_HALF),
-    sprite_cell(0, 2, TAIL, BOID_TOP_RIGHT),
-    sprite_cell(1, 2, TAIL, BOID_TOP_LEFT),
+    sprite_cell(0, 2, TAIL, BOID_RIGHT_HALF),
+    sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
+    sprite_cell(0, 3, TAIL, BOID_TOP_RIGHT),
+    sprite_cell(1, 3, TAIL, BOID_TOP_LEFT),
 ];
 
 const PREDATOR_EAST: [BoidSpriteCell; 32] = [
@@ -1218,7 +1226,8 @@ mod tests {
                 (9, 1, BOID_UPPER_HALF)
             ]
         );
-        assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
+        assert_eq!(prey_north, vec![".h.", ".b.", "fff", ".t.", "ttt"]);
+        assert_eq!(prey_north_east, vec!["..bh", ".fb.", "tb..", "tt.."]);
         assert_eq!(prey_north_west, mirror_columns(&prey_north_east));
         assert_eq!(prey_south_east, mirror_rows(&prey_north_east));
         assert_eq!(prey_south_west, mirror_rows(&prey_north_west));
@@ -1339,7 +1348,10 @@ mod tests {
                 .iter()
                 .all(|cell| matches!(cell.tone, TAIL | BODY | FIN | HEAD))
         );
-        assert_eq!(sprite_signature_for_cells(prey), vec![".bh", "tbb", "tt."]);
+        assert_eq!(
+            sprite_signature_for_cells(prey),
+            vec!["..bh", ".fb.", "tb..", "tt.."]
+        );
         assert_eq!(
             sprite_signature_for_cells(predator),
             vec!["....bh", "...bbb", "..bbb.", ".tbb..", "tt....", "t....."]
