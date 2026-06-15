@@ -363,6 +363,7 @@ enum BoidDirection {
 enum BoidSpriteTone {
     Tail,
     Body,
+    Fin,
     Head,
 }
 
@@ -371,14 +372,16 @@ impl BoidSpriteTone {
         match self {
             Self::Tail => 0,
             Self::Body => 1,
-            Self::Head => 2,
+            Self::Fin => 2,
+            Self::Head => 3,
         }
     }
 
     fn from_index(index: usize) -> Self {
         match index {
             0 => Self::Tail,
-            2 => Self::Head,
+            2 => Self::Fin,
+            3 => Self::Head,
             _ => Self::Body,
         }
     }
@@ -412,25 +415,22 @@ const BOID_BOTTOM_LEFT: char = '▖';
 const BOID_BOTTOM_RIGHT: char = '▗';
 const TAIL: BoidSpriteTone = BoidSpriteTone::Tail;
 const BODY: BoidSpriteTone = BoidSpriteTone::Body;
+const FIN: BoidSpriteTone = BoidSpriteTone::Fin;
 const HEAD: BoidSpriteTone = BoidSpriteTone::Head;
 
-const PREY_EAST: [BoidSpriteCell; 16] = [
-    sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
-    sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(3, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(4, 0, BODY, BOID_BLOCK),
-    sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(6, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(7, 0, HEAD, BOID_BOTTOM_RIGHT),
+const PREY_EAST: [BoidSpriteCell; 12] = [
+    sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
     sprite_cell(0, 1, TAIL, BOID_TOP_RIGHT),
     sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(3, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(4, 1, BODY, BOID_BLOCK),
-    sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(7, 1, HEAD, BOID_TOP_RIGHT),
+    sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(5, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(6, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(7, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(8, 1, HEAD, BOID_BOTTOM_RIGHT),
+    sprite_cell(5, 2, FIN, BOID_UPPER_HALF),
+    sprite_cell(6, 2, FIN, BOID_UPPER_HALF),
 ];
 const PREY_SOUTH_EAST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, TAIL, BOID_BOTTOM_RIGHT),
@@ -459,23 +459,19 @@ const PREY_SOUTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 2, HEAD, BOID_BOTTOM_LEFT),
     sprite_cell(1, 2, BODY, BOID_UPPER_HALF),
 ];
-const PREY_WEST: [BoidSpriteCell; 16] = [
-    sprite_cell(0, 0, HEAD, BOID_BOTTOM_LEFT),
-    sprite_cell(1, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(2, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(3, 0, BODY, BOID_BLOCK),
-    sprite_cell(4, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(5, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(6, 0, BODY, BOID_LOWER_HALF),
-    sprite_cell(7, 0, TAIL, BOID_BOTTOM_LEFT),
-    sprite_cell(0, 1, HEAD, BOID_TOP_LEFT),
-    sprite_cell(1, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(2, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(3, 1, BODY, BOID_BLOCK),
+const PREY_WEST: [BoidSpriteCell; 12] = [
+    sprite_cell(4, 0, FIN, BOID_LOWER_HALF),
+    sprite_cell(0, 1, HEAD, BOID_BOTTOM_LEFT),
+    sprite_cell(1, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(2, 1, BODY, BOID_LOWER_HALF),
+    sprite_cell(3, 1, BODY, BOID_LOWER_HALF),
     sprite_cell(4, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(5, 1, BODY, BOID_UPPER_HALF),
     sprite_cell(6, 1, BODY, BOID_UPPER_HALF),
-    sprite_cell(7, 1, TAIL, BOID_TOP_LEFT),
+    sprite_cell(7, 1, BODY, BOID_UPPER_HALF),
+    sprite_cell(8, 1, TAIL, BOID_TOP_LEFT),
+    sprite_cell(2, 2, FIN, BOID_UPPER_HALF),
+    sprite_cell(3, 2, FIN, BOID_UPPER_HALF),
 ];
 const PREY_NORTH_WEST: [BoidSpriteCell; 7] = [
     sprite_cell(0, 0, HEAD, BOID_TOP_LEFT),
@@ -757,6 +753,7 @@ fn colorize_boid_cell(index: usize, tone_index: usize, glyph: char) -> String {
     let color = match BoidSpriteTone::from_index(tone_index) {
         BoidSpriteTone::Tail => tail_palette[palette_index],
         BoidSpriteTone::Body => body_palette[palette_index],
+        BoidSpriteTone::Fin => Color::DarkBlue,
         BoidSpriteTone::Head => head_palette[palette_index],
     };
     crate::terminal_control::styled(glyph, color)
@@ -799,6 +796,7 @@ mod tests {
         match tone {
             BoidSpriteTone::Tail => 't',
             BoidSpriteTone::Body => 'b',
+            BoidSpriteTone::Fin => 'f',
             BoidSpriteTone::Head => 'h',
         }
     }
@@ -1141,27 +1139,57 @@ mod tests {
         let prey_south_east = sprite_signature(BoidRole::Flock, Vec2::new(1.0, 1.0));
         let prey_south_west = sprite_signature(BoidRole::Flock, Vec2::new(-1.0, 1.0));
 
-        assert_eq!(prey_east, vec!["tbbbbbbh", "tbbbbbbh"]);
-        let prey_east_fin_cells = boid_sprite_cells(
+        assert_eq!(prey_east, vec!["....f....", "tbbbbbbbh", ".....ff.."]);
+        let prey_east_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
             Vec2::new(1.0, 0.0),
-        )
-        .iter()
-        .filter(|cell| cell.glyph == BOID_BLOCK)
-        .map(|cell| (cell.dx, cell.dy))
-        .collect::<Vec<_>>();
-        assert_eq!(prey_east_fin_cells, vec![(4, 0), (4, 1)]);
-        let prey_west_fin_cells = boid_sprite_cells(
+        );
+        assert!(prey_east_cells.iter().all(|cell| cell.glyph != BOID_BLOCK));
+        assert!(
+            prey_east_cells
+                .iter()
+                .filter(|cell| cell.tone == BODY)
+                .all(|cell| matches!(cell.glyph, BOID_UPPER_HALF | BOID_LOWER_HALF))
+        );
+        let prey_east_fin_cells = prey_east_cells
+            .iter()
+            .filter(|cell| cell.tone == FIN)
+            .map(|cell| (cell.dx, cell.dy, cell.glyph))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            prey_east_fin_cells,
+            vec![
+                (4, 0, BOID_LOWER_HALF),
+                (5, 2, BOID_UPPER_HALF),
+                (6, 2, BOID_UPPER_HALF)
+            ]
+        );
+        let prey_west_cells = boid_sprite_cells(
             GameOfLifeCellStyle::FullBlock,
             BoidRole::Flock,
             Vec2::new(-1.0, 0.0),
-        )
-        .iter()
-        .filter(|cell| cell.glyph == BOID_BLOCK)
-        .map(|cell| (cell.dx, cell.dy))
-        .collect::<Vec<_>>();
-        assert_eq!(prey_west_fin_cells, vec![(3, 0), (3, 1)]);
+        );
+        assert!(prey_west_cells.iter().all(|cell| cell.glyph != BOID_BLOCK));
+        assert!(
+            prey_west_cells
+                .iter()
+                .filter(|cell| cell.tone == BODY)
+                .all(|cell| matches!(cell.glyph, BOID_UPPER_HALF | BOID_LOWER_HALF))
+        );
+        let prey_west_fin_cells = prey_west_cells
+            .iter()
+            .filter(|cell| cell.tone == FIN)
+            .map(|cell| (cell.dx, cell.dy, cell.glyph))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            prey_west_fin_cells,
+            vec![
+                (4, 0, BOID_LOWER_HALF),
+                (2, 2, BOID_UPPER_HALF),
+                (3, 2, BOID_UPPER_HALF)
+            ]
+        );
         assert_eq!(prey_north_east, vec![".bh", "tbb", "tt."]);
         assert_eq!(prey_north_west, mirror_columns(&prey_north_east));
         assert_eq!(prey_south_east, mirror_rows(&prey_north_east));
@@ -1246,6 +1274,10 @@ mod tests {
             colorize_boid_cell(1, TAIL.as_index(), BOID_BLOCK),
             colorize_boid_cell(1, HEAD.as_index(), BOID_BLOCK)
         );
+        assert_ne!(
+            colorize_boid_cell(1, BODY.as_index(), BOID_BLOCK),
+            colorize_boid_cell(1, FIN.as_index(), BOID_BLOCK)
+        );
     }
 
     // Defends: predators remain larger than prey while using the same terminal-safe painted-cell language.
@@ -1270,12 +1302,12 @@ mod tests {
         assert!(predator_height > prey_height);
         assert!(
             prey.iter()
-                .all(|cell| matches!(cell.tone, TAIL | BODY | HEAD))
+                .all(|cell| matches!(cell.tone, TAIL | BODY | FIN | HEAD))
         );
         assert!(
             predator
                 .iter()
-                .all(|cell| matches!(cell.tone, TAIL | BODY | HEAD))
+                .all(|cell| matches!(cell.tone, TAIL | BODY | FIN | HEAD))
         );
         assert_eq!(sprite_signature_for_cells(prey), vec![".bh", "tbb", "tt."]);
         assert_eq!(
