@@ -5,6 +5,7 @@ mod game_of_life;
 mod kitty_frames;
 mod mandelbrot;
 mod random;
+mod screen_runner;
 mod terminal_control;
 
 use crossterm::terminal;
@@ -33,6 +34,7 @@ pub use random::{
     BOIDS_RANDOM_STYLES, GAME_OF_LIFE_RANDOM_STYLES, MANDELBROT_STYLE, random_animation_slot_count,
     random_animation_styles, resolve_random_animation_style,
 };
+pub use screen_runner::{LOGO_STYLE, SCREEN_RANDOM_STYLES, STATIC_STYLE, run_screen_cli};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScreenCell {

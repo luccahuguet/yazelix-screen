@@ -132,10 +132,10 @@ pub fn play_kitty_png_frame_sequence(
         }
         frame_index += 1;
 
-        if let Some(duration) = duration {
-            if started_at.elapsed() >= duration.max(sequence.frame_delay) {
-                break Ok(());
-            }
+        if let Some(duration) = duration
+            && started_at.elapsed() >= duration.max(sequence.frame_delay)
+        {
+            break Ok(());
         }
     };
 

@@ -6,17 +6,20 @@ The user-facing command is `yzs`
 
 ```bash
 nix run github:luccahuguet/yazelix-screen#yzs
+nix run github:luccahuguet/yazelix-screen#yzs -- static
 nix run github:luccahuguet/yazelix-screen#yzs -- mandelbrot
 nix run github:luccahuguet/yazelix-screen#yzs -- game_of_life_bloom --cell-style dotted
+nix run github:luccahuguet/yazelix-screen#yzs -- random --duration-seconds 3
 ```
 
 ## What It Contains
 
 - Animation engines for Boids, Mandelbrot, and Game of Life
+- Static and logo-style Yazelix welcome screens
 - File-backed Kitty PNG frame sequence rendering
 - Frame production through `ScreenFrameProducer`
 - Terminal sizing helpers and alternate-screen rendering helpers
-- A standalone `yzs` binary
+- A standalone `yzs` binary with interactive and timed playback
 - Small examples for library consumers
 
 ## User Command
@@ -26,8 +29,10 @@ Installed standalone command:
 ```bash
 yzs --help
 yzs
+yzs static
 yzs mandelbrot
 yzs game_of_life_bloom --cell-style dotted
+yzs random --duration-seconds 3
 ```
 
 Yazelix users get the integrated screen surface through the main command:
@@ -43,8 +48,10 @@ From this repository:
 
 ```bash
 cargo run --bin yzs -- --help
+cargo run --bin yzs -- static
 cargo run --bin yzs -- mandelbrot
 cargo run --bin yzs -- game_of_life_bloom --cell-style dotted
+cargo run --bin yzs -- random --duration-seconds 3
 ```
 
 With Nix:
@@ -52,11 +59,15 @@ With Nix:
 ```bash
 nix build .#yzs
 nix run .#yzs -- --help
+nix run .#yzs -- static
 nix run .#yzs -- mandelbrot
+nix run .#yzs -- random --duration-seconds 3
 ```
 
 Supported styles:
 
+- `static`
+- `logo`
 - `boids`
 - `boids_predator`
 - `boids_schools`
@@ -88,7 +99,7 @@ The second argument is the frame count. The examples use only `yazelix_screen` A
 
 ## Boundary With Yazelix
 
-`yazelix_screen` owns reusable animation and terminal-rendering primitives. Yazelix product behavior stays outside the crate
+`yazelix_screen` owns reusable animation and terminal-rendering primitives, including standalone Yazelix-branded screen styles. Integrated welcome/session policy stays outside the crate
 
 The crate must not depend on:
 
@@ -123,7 +134,7 @@ v0.1.0
 From this repository:
 
 ```bash
-cargo fmt --check
+cargo fmt --all -- --check
 cargo check --examples
 cargo test
 cargo run --bin yzs -- --help

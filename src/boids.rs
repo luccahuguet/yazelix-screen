@@ -315,7 +315,7 @@ fn predator_velocity(index: usize, previous: &[Boid]) -> Vec2 {
         }
         if nearest
             .as_ref()
-            .map_or(true, |(nearest_distance, _)| distance < *nearest_distance)
+            .is_none_or(|(nearest_distance, _)| distance < *nearest_distance)
         {
             nearest = Some((distance, offset));
         }
